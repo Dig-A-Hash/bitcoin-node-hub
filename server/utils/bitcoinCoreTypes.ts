@@ -142,13 +142,20 @@ interface PeerInfo {
 }
 
 // Define the expected API response type
-export interface ApiResponse {
+export interface DashboardResponse {
   success: boolean;
-  data?: {
+  data?: Array<{
+    nodeIndex: number;
+    host: string;
     blockchainInfo: BlockchainInfo;
     networkInfo: NetworkInfo;
-    memoryInfo: MemoryInfo;
-    chainTxStats: ChainTxStats;
-  };
+  }>;
   error?: string;
+}
+
+export interface BitcoinNodeCredential {
+  user: string;
+  password: string;
+  host: string;
+  port: string;
 }

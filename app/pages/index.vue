@@ -3,7 +3,7 @@
 import { ref } from 'vue';
 import {
   type BlockchainInfo,
-  type ApiResponse,
+  type DashboardResponse,
   type NetworkInfo,
   type MemoryInfo,
   type ChainTxStats,
@@ -12,25 +12,25 @@ import {
 // Define reactive state with types
 const blockchainInfo = ref<BlockchainInfo | null>(null);
 const networkInfo = ref<NetworkInfo | null>(null);
-const memoryInfo = ref<MemoryInfo | null>(null);
-const chainTxStats = ref<ChainTxStats | null>(null);
 
 // Fetch data (example)
-async function fetchMetrics() {
+async function fetchDashboard() {
   try {
-    const response = await $fetch<ApiResponse>('/api/getDashboard');
-    if (response.success && response.data) {
-      blockchainInfo.value = response.data.blockchainInfo;
-      networkInfo.value = response.data.networkInfo;
-      memoryInfo.value = response.data.memoryInfo;
-      chainTxStats.value = response.data.chainTxStats;
+    const response = await $fetch<DashboardResponse>('/api/getDashboard');
+    if (response.success && response.data && response.data.length > 0) {
+      const firstNode = response.data[0]; // Use first node's metrics
+      if (firstNode) {
+        blockchainInfo.value = firstNode.blockchainInfo;
+        networkInfo.value = firstNode.networkInfo;
+      }
     }
   } catch (error) {
     console.error('Error fetching metrics:', error);
   }
 }
+
 onMounted(() => {
-  fetchMetrics();
+  fetchDashboard();
 });
 </script>
 
@@ -43,20 +43,14 @@ onMounted(() => {
       </UCard>
     </div>
     <div class="grid grid-cols-3 gap-4">
+      <UCard> {{}} </UCard>
       <UCard>
-        {{}}
+        <h1>blockchainInfo</h1>
+        <p v-if="blockchainInfo">{{ blockchainInfo }}</p>
       </UCard>
       <UCard>
-        <h1>getBlockchainInfo</h1>
-        <p v-if="getBlockchainInfo">
-          getBlockchainInfo: {{ getBlockchainInfo }}
-        </p>
-      </UCard>
-      <UCard>
-        <h1>getBlockchainInfo</h1>
-        <p v-if="getBlockchainInfo">
-          getBlockchainInfo: {{ getBlockchainInfo }}
-        </p>
+        <h1>networkInfo</h1>
+        <p v-if="networkInfo">{{ networkInfo }}</p>
       </UCard>
     </div>
   </UContainer>

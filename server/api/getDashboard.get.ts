@@ -1,29 +1,51 @@
-// server/api/dashboardMetrics.get.ts
+// server/api/getDashboard.get.ts
 import client from '../utils/bitcoinCoreClient';
-import {
-  ChainTxStats,
-  MemoryInfo,
-  NetworkInfo,
-  BlockchainInfo,
-} from '../utils/bitcoinCoreTypes';
+import { getBitcoinClients } from '~~/server/utils/bitcoinCoreClients';
+import { NetworkInfo, BlockchainInfo } from '../utils/bitcoinCoreTypes';
+import BitcoinCore from 'bitcoin-core';
+
+export default defineEventHandler(async () => {
+  try {
+    const clients = getBitcoinClients();
+    const metricsPromises = clients.map(
+      async (client: BitcoinCore, index: number) => {
+        const [networkInfo, blockchainInfo] = await Promise.all([
+          client.getNetworkInfo(),
+          client.getBlockchainInfo(),
+        ]);
+        return {
+          nodeIndex: index,
+          host: client.host,
+          networkInfo: networkInfo as NetworkInfo,
+          blockchainInfo: blockchainInfo as BlockchainInfo,
+        };
+      }
+    );
+
+    const results = await Promise.all(metricsPromises);
+
+    return {
+      success: true,
+      data: results,
+    };
+  } catch (error) {
+    console.error('Error fetching dashboard metrics:', error);
+    return { success: false, error: 'Failed to fetch dashboard metrics' };
+  }
+});
 
 /**
  * Fetches multiple Bitcoin node metrics for dashboard display.
- */
+
 export default defineEventHandler(async () => {
   try {
-    const [chainTxStats, memoryInfo, networkInfo, blockchainInfo] =
-      await Promise.all([
-        client.getChainTxStats(),
-        client.getMemoryInfo(),
-        client.getNetworkInfo(),
-        client.getBlockchainInfo(),
-      ]);
+    const [networkInfo, blockchainInfo] = await Promise.all([
+      client.getNetworkInfo(),
+      client.getBlockchainInfo(),
+    ]);
     return {
       success: true,
       data: {
-        chainTxStats: chainTxStats as ChainTxStats,
-        memoryInfo: memoryInfo as MemoryInfo,
         networkInfo: networkInfo as NetworkInfo,
         blockchainInfo: blockchainInfo as BlockchainInfo,
       },
@@ -33,3 +55,4 @@ export default defineEventHandler(async () => {
     return { success: false, error: 'Failed to fetch dashboard metrics' };
   }
 });
+ */
