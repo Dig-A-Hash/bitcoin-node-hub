@@ -73,3 +73,5 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+VSCode sandboxing will not allow Node.js to call IPs that are on the local network. Either use external Terminal: Explorer Kind, or start vsCode with no sandboxing, or start the app outside of VSCode in a terminal window.

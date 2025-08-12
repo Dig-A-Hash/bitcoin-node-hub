@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@nuxt/ui": "^3.3.0",
+    "bitcoin": "^3.0.3",
+    "bitcoin-core": "^5.0.0",
     "nuxt": "^4.0.3",
     "typescript": "^5.9.2",
     "vue": "^3.5.18",
