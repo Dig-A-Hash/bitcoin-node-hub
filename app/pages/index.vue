@@ -107,12 +107,12 @@ onMounted(() => {
             </div>
           </div>
         </template>
-        <div class="p-4 flex items-center">
+        <div class="p-4 pb-2 flex items-center">
           <UBadge
             color="neutral"
             variant="outline"
             size="xl"
-            class="font-bold rounded-full mr-2 px-4"
+            class="font-bold rounded-full mr-2 px-4 py-3"
           >
             {{ myNode.networkInfo.connections }}
           </UBadge>
@@ -136,7 +136,7 @@ onMounted(() => {
               <UBadge
                 class="font-bold ml-2 px-4 dark:bg-neutral-700 light:bg-neutral-300"
               >
-                <span class="text-neutral-500">{{
+                <span class="dark:text-neutral-300 light:text-neutral-600">{{
                   myNode.networkInfo.connections_out
                 }}</span>
               </UBadge>
