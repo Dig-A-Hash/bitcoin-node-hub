@@ -4,3 +4,18 @@
 button {
   cursor: pointer;
 }
+
+html.light body {
+  min-height: 100vh; 
+  background: radial-gradient(circle at center, rgb(204, 224, 239) 24%, rgb(123, 164, 197) 100%);
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+html.dark body {
+  min-height: 100vh;
+  background: radial-gradient(circle at center, rgb(3, 24, 71) 24%, rgba(0, 0, 0, 1) 100%);
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+

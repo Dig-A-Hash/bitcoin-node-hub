@@ -3,19 +3,20 @@
   <div>
     <!-- Header -->
     <header
-      class="bg-gray-800 text-white p-3 flex justify-between items-center"
+      class="bg-elevated/50 border-b border-accented/50 flex justify-between items-center"
     >
-      <div class="flex">
+      <div class="flex items-center">
         <UButton
-          color="neutral"
-          variant="outline"
-          icon="i-lucide-menu"
+          color="secondary"
+          variant="ghost"
           @click="toggleDrawer"
-          class="mr-2"
-        />
-        <span class="text-lg font-semibold">Bitcoin Node-Runner</span>
+          class="mr-4 rounded-none p-3"
+        >
+          <UIcon size="28" name="solar:hamburger-menu-linear" />
+        </UButton>
+        <span class="text-lg font-semibold">Bitcoin Node-Runner Hub</span>
       </div>
-      <div>X</div>
+      <ColorModeToggle />
     </header>
 
     <!-- Nav Drawer -->
