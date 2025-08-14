@@ -14,7 +14,12 @@
         >
           <UIcon size="28" name="solar:hamburger-menu-linear" />
         </UButton>
-        <span class="text-lg font-semibold">Bitcoin Node-Runner Hub</span>
+        <UIcon
+          size="32"
+          name="bitcoin-icons:bitcoin-circle-filled"
+          class="dark:text-orange-400 light:text-amber-600 mr-1"
+        ></UIcon>
+        <span class="text-lg font-semibold"> Node-Runner Glass</span>
       </div>
       <ColorModeToggle />
     </header>
