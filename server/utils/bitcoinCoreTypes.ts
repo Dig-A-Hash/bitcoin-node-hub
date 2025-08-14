@@ -141,15 +141,17 @@ interface PeerInfo {
   misbehavior_score: number; // Score tracking peer misbehavior (0 for no issues)
 }
 
-// Define the expected API response type
+export interface DashboardNode {
+  nodeIndex: number;
+  host: string;
+  blockchainInfo: BlockchainInfo;
+  networkInfo: NetworkInfo;
+  error?: string;
+}
+
 export interface DashboardResponse {
   success: boolean;
-  data?: Array<{
-    nodeIndex: number;
-    host: string;
-    blockchainInfo: BlockchainInfo;
-    networkInfo: NetworkInfo;
-  }>;
+  data?: Array<DashboardNode>;
   error?: string;
 }
 
