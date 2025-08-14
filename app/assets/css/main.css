@@ -1,20 +1,25 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+@theme static {
+  --color-green-subtle: rgba(3, 242, 51, 0.1);
+  --color-red-subtle: rgba(242, 3, 3, 0.1); 
+}
+
 button {
   cursor: pointer;
 }
 
 html.light body {
   min-height: 100vh; 
-  background: radial-gradient(circle at center, rgb(204, 224, 239) 24%, rgb(123, 164, 197) 100%);
+  background: radial-gradient(circle at center, rgb(154, 180, 199) 24%, rgb(57, 108, 150) 100%);
   background-repeat: no-repeat;
   background-size: cover;
 }
 
 html.dark body {
   min-height: 100vh;
-  background: radial-gradient(circle at center, rgb(3, 24, 71) 24%, rgba(0, 0, 0, 1) 100%);
+  background: radial-gradient(circle at center, rgb(3, 24, 71) 24%, rgb(0, 9, 23) 100%);
   background-repeat: no-repeat;
   background-size: cover;
 }

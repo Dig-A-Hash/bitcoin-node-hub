@@ -1,8 +1,6 @@
 <!-- src/components/Dashboard.vue -->
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { type DashboardResponse } from '../../server/utils/bitcoinCoreTypes';
-import { truncateNodeString } from '~~/utils/truncateString';
+import { type DashboardResponse } from '~~/server/utils/bitcoinCoreTypes';
 
 const toast = useToast();
 const dashboardResponse = ref<DashboardResponse | null>(null);
@@ -38,23 +36,6 @@ const copyAddress = async (address: string) => {
   }
 };
 
-// Compute percentages for each node
-const nodeProgress = computed(() => {
-  return (
-    dashboardResponse.value?.data?.map((node) => {
-      const total =
-        (node.networkInfo.connections_in || 0) +
-        (node.networkInfo.connections_out || 0);
-      return {
-        inPercent:
-          total > 0 ? (node.networkInfo.connections_in / total) * 100 : 0,
-        outPercent:
-          total > 0 ? (node.networkInfo.connections_out / total) * 100 : 0,
-      };
-    }) || []
-  );
-});
-
 onMounted(() => {
   fetchDashboard();
 });
@@ -63,7 +44,11 @@ onMounted(() => {
 <template>
   <UContainer class="mt-4">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <card-node
+      <template v-for="(node, index) in dashboardResponse?.data" :key="index">
+        <card-dash :dashboard-node="node"></card-dash>
+      </template>
+
+      <!-- <card-node
         v-for="(myNode, index) in dashboardResponse?.data"
         :key="index"
         header-class=""
@@ -73,79 +58,114 @@ onMounted(() => {
             class="flex items-center"
             v-if="myNode.networkInfo && myNode.networkInfo.localaddresses[0]"
           >
-            <div class="border-r dark:border-slate-800 light:border-gray-200">
+            <div
+              class="border-r dark:border-slate-800 light:border-gray-200 bg-green-subtle"
+            >
               <div
-                class="rounded-none rounded-tl-lg p-2 px-4 h-18 flex items-center"
+                class="rounded-none rounded-tl-lg px-4 h-12 flex items-center"
               >
                 <div class="text-center">
-                  <div class="text-xs">Node</div>
-                  <div class="font-bold text-lg">{{ index + 1 }}</div>
+                  <div class="flex items-center">
+                    <UChip standalone inset class="mr-2" />
+                    <div class="text-xs">Online</div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="p-4 truncate">
-              {{ myNode.networkInfo?.localaddresses[0].address }}
+            <div class="px-4 truncate w-full">
+              {{ myNode.host }}
             </div>
             <div class="border-l dark:border-slate-800 light:border-gray-200">
-              <UButton
-                class="rounded-none rounded-tr-lg h-18"
-                @click="
-                  copyAddress(myNode.networkInfo.localaddresses[0].address)
-                "
-                color="secondary"
-                variant="ghost"
-              >
-                <div class="m-1">
+              <UTooltip text="Edit this nodes name.">
+                <UButton
+                  class="rounded-none rounded-tr-lg h-12"
+                  @click="
+                    copyAddress(myNode.networkInfo.localaddresses[0].address)
+                  "
+                  color="secondary"
+                  variant="ghost"
+                >
                   <UIcon
                     size="24"
                     class=""
-                    name="solar:hamburger-menu-bold"
+                    name="solar:clapperboard-edit-linear"
                   ></UIcon>
-                  <div class="text-xs">Addr.</div>
-                </div>
-              </UButton>
+                </UButton>
+              </UTooltip>
             </div>
           </div>
         </template>
-        <div class="p-4 pb-2 flex items-center">
-          <UBadge
-            color="neutral"
-            variant="outline"
-            size="xl"
-            class="font-bold rounded-full mr-2 px-4 py-3"
+        <div class="p-4 pb-2 flex items-center justify-between">
+          <UTooltip
+            :text="`There are ${myNode.networkInfo.connections} connections currently made to this node.`"
           >
-            {{ myNode.networkInfo.connections }}
-          </UBadge>
-          Connections
+            <div class="cursor-default">
+              <UBadge
+                color="neutral"
+                variant="outline"
+                size="xl"
+                class="font-bold rounded-full mr-2 px-4 py-3"
+              >
+                {{ myNode.networkInfo.connections }}
+              </UBadge>
+              <span class="text-lg">Connections</span>
+            </div>
+          </UTooltip>
+          <UTooltip text="More info about the connections">
+            <UButton
+              color="secondary"
+              variant="outline"
+              icon="solar:global-outline"
+              >View</UButton
+            >
+          </UTooltip>
         </div>
         <div v-if="nodeProgress[index]" class="px-4">
           <UProgress
+            status
             v-model="nodeProgress[index].inPercent"
             color="secondary"
-            class="border border-neutral-500 rounded-lg"
+            class=""
+            size="lg"
+            :ui="{
+              indicator: 'rounded-none bg-blue-700',
+              base: 'bg-emerald-700  dark:border border-neutral-800',
+            }"
           />
           <div class="mt-2 flex justify-between">
             <div>
-              <UBadge color="secondary" class="font-bold mr-2 px-4">
-                {{ myNode.networkInfo.connections_in }}
-              </UBadge>
-              <span class="text-secondary">In</span>
+              <UTooltip
+                :text="`${myNode.networkInfo.connections_in} nodes have initiated incoming connections to this node.`"
+              >
+                <div class="cursor-default">
+                  <UBadge size="lg" class="font-bold mr-2 px-4 bg-blue-700">
+                    <span class="text-neutral-100">
+                      {{ myNode.networkInfo.connections_in }}
+                    </span>
+                  </UBadge>
+                  <span class="">In</span>
+                </div>
+              </UTooltip>
             </div>
             <div>
-              <span class="text-neutral-500">Out</span>
-              <UBadge
-                class="font-bold ml-2 px-4 dark:bg-neutral-700 light:bg-neutral-300"
+              <UTooltip
+                :text="`This node has initiated ${myNode.networkInfo.connections_out} connections to other nodes.`"
               >
-                <span class="dark:text-neutral-300 light:text-neutral-600">{{
-                  myNode.networkInfo.connections_out
-                }}</span>
-              </UBadge>
+                <div class="cursor-default">
+                  <span class="">Out</span>
+                  <UBadge size="lg" class="font-bold ml-2 px-4 bg-emerald-700">
+                    <span class="text-neutral-100">{{
+                      myNode.networkInfo.connections_out
+                    }}</span>
+                  </UBadge>
+                </div>
+              </UTooltip>
             </div>
           </div>
         </div>
         <divider class="my-4"></divider>
         <div>test</div>
-      </card-node>
+      </card-node> -->
     </div>
   </UContainer>
 </template>

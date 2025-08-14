@@ -16,23 +16,15 @@ const hasHeader = computed(() => !!slots.header);
 <template>
   <UCard
     :class="props.cardClass"
-    variant="subtle"
-    class=""
     :ui="{
-      header: `p-0 px-0 sm:px-0 m-0 ${headerClass}`,
+      root: 'rounded-lg overflow-hidden',
+      header: `p-0 sm:px-2 ${headerClass}`,
       body: `p-0 sm:p-0  rounded-b-lg rounded-t-none ${
         hasFooter ? 'rounded-t-lg' : ''
       }`,
+      footer: 'p-0 sm:px-0',
     }"
   >
-    <template #header v-if="hasHeader">
-      <slot name="header"></slot>
-    </template>
-
     <slot></slot>
-
-    <template #footer v-if="hasFooter">
-      <slot name="footer"></slot>
-    </template>
   </UCard>
 </template>
