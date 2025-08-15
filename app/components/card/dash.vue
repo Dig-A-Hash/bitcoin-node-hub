@@ -145,21 +145,24 @@ const nodeProgress = computed(() => {
     <!-- Connections -->
 
     <div class="p-4 pb-2 pt-0 flex items-center justify-between">
-      <UTooltip
-        :text="`There are ${dashboardNode.networkInfo.connections} connections currently made to this node.`"
-      >
-        <div class="cursor-default">
-          <UBadge
-            color="neutral"
-            variant="outline"
-            size="xl"
-            class="font-bold rounded-full mr-2 px-4 py-3"
-          >
-            {{ dashboardNode.networkInfo.connections }}
-          </UBadge>
-          <span class="text-lg">Connections</span>
-        </div>
-      </UTooltip>
+      <div>
+        <div class="text-lg mb-2">Connections</div>
+        <UTooltip
+          :text="`There are ${dashboardNode.networkInfo.connections} connections currently made to this node.`"
+        >
+          <div class="cursor-default">
+            <UBadge
+              color="neutral"
+              variant="outline"
+              size="xl"
+              class="font-bold rounded-full mr-1 px-4 py-3"
+            >
+              {{ dashboardNode.networkInfo.connections }}
+            </UBadge>
+            Total
+          </div>
+        </UTooltip>
+      </div>
       <UTooltip text="More info about the connections">
         <UButton color="secondary" variant="outline" icon="solar:global-outline"
           >View</UButton
@@ -262,7 +265,13 @@ const nodeProgress = computed(() => {
           size="64"
           class="mt-10"
         ></UIcon>
-        <div>Offline</div>
+        <UAlert
+          variant="soft"
+          color="neutral"
+          class="dark:text-slate-400 light:text-slate-500"
+          title="Connection Error"
+          :description="dashboardNode.error"
+        />
       </div>
     </div>
   </card-node>

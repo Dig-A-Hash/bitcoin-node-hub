@@ -25,7 +25,7 @@ export default defineEventHandler(async (): Promise<DashboardResponse> => {
             networkInfo: networkInfo as NetworkInfo,
             blockchainInfo: blockchainInfo as BlockchainInfo,
           };
-        } catch (error) {
+        } catch (error: any) {
           return {
             nodeIndex: index,
             host: client.host,
