@@ -6,7 +6,7 @@ export const getBitcoinClients = (): BitcoinCore[] => {
     ? JSON.parse(process.env.BITCOIN_NODES)
     : [];
   return nodes.map(
-    (node: BitcoinNodeCredential, index: number) =>
+    (node: BitcoinNodeCredential) =>
       new BitcoinCore({
         host: `http://${node.host}:${node.port}`,
         username: node.user,

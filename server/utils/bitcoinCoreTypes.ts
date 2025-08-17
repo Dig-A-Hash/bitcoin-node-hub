@@ -143,6 +143,7 @@ interface PeerInfo {
 
 export interface DashboardNode {
   nodeIndex: number;
+  name: string;
   host: string;
   blockchainInfo: BlockchainInfo;
   networkInfo: NetworkInfo;
@@ -160,4 +161,5 @@ export interface BitcoinNodeCredential {
   password: string;
   host: string;
   port: string;
+  name: string;
 }

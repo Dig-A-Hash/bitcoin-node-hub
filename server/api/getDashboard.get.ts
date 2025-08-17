@@ -12,6 +12,9 @@ import BitcoinCore from 'bitcoin-core';
 export default defineEventHandler(async (): Promise<DashboardResponse> => {
   try {
     const clients = getBitcoinClients();
+    const nodes: BitcoinNodeCredential[] = process.env.BITCOIN_NODES
+      ? JSON.parse(process.env.BITCOIN_NODES)
+      : [];
     const metricsPromises = clients.map(
       async (client: BitcoinCore, index: number) => {
         try {
@@ -21,10 +24,11 @@ export default defineEventHandler(async (): Promise<DashboardResponse> => {
           ]);
           return {
             nodeIndex: index,
+            name: nodes[index].name,
             host: client.host,
             networkInfo: networkInfo as NetworkInfo,
             blockchainInfo: blockchainInfo as BlockchainInfo,
-          };
+          } as DashboardNode;
         } catch (error: any) {
           return {
             nodeIndex: index,
