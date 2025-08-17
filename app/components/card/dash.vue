@@ -53,20 +53,16 @@ const nodeProgress = computed(() => {
           </div>
         </div>
         <div class="px-4 truncate w-full">
-          {{ dashboardNode.host }}
+          {{ dashboardNode.name }}
         </div>
         <div class="border-l dark:border-slate-800 light:border-gray-200">
-          <UTooltip text="Edit this nodes name.">
+          <UTooltip text="View node addresses.">
             <UButton
               class="rounded-none rounded-tr-lg h-12"
               color="secondary"
               variant="ghost"
             >
-              <UIcon
-                size="24"
-                class=""
-                name="solar:clapperboard-edit-linear"
-              ></UIcon>
+              <UIcon size="24" class="" name="solar:info-square-bold"></UIcon>
             </UButton>
           </UTooltip>
         </div>
@@ -163,9 +159,9 @@ const nodeProgress = computed(() => {
           </div>
         </UTooltip>
       </div>
-      <UTooltip text="More info about the connections">
-        <UButton color="secondary" variant="outline" icon="solar:global-outline"
-          >View</UButton
+      <UTooltip text="View details about the connections.">
+        <UButton color="secondary" variant="subtle" icon="solar:global-outline"
+          >Details</UButton
         >
       </UTooltip>
     </div>
@@ -219,9 +215,19 @@ const nodeProgress = computed(() => {
 
     <divider class="my-4"></divider>
 
-    <!-- More Info -->
+    <!-- Version Info -->
 
-    <div class="p-4 pt-0">More Info Here</div>
+    <div class="p-4 pt-0">
+      <div class="text-lg mb-1">Version</div>
+      <div class="space-x-2">
+        <UBadge color="neutral" variant="soft">
+          {{ dashboardNode.networkInfo.version }}
+        </UBadge>
+        <UBadge color="neutral" variant="soft">
+          {{ dashboardNode.networkInfo.subversion }}
+        </UBadge>
+      </div>
+    </div>
   </card-node>
   <card-node v-else header-class="">
     <template #header>

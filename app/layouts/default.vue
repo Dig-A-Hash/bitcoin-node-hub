@@ -19,7 +19,7 @@
           name="bitcoin-icons:bitcoin-circle-filled"
           class="dark:text-orange-400 light:text-amber-600 mr-1"
         ></UIcon>
-        <span class="text-lg font-semibold"> Node-Runner Glass</span>
+        <span class="text-lg font-semibold"> Bitcoin Node Hub</span>
       </div>
       <ColorModeToggle />
     </header>
