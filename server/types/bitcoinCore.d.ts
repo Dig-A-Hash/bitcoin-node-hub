@@ -1,5 +1,3 @@
-// server/utils/bitcoinTypes.ts
-
 export interface ChainTxStats {
   time: number; // Timestamp of the stats
   txcount: number; // Total number of transactions
@@ -139,21 +137,6 @@ interface PeerInfo {
   transport_protocol_type: string; // Transport protocol used (e.g., "v2")
   session_id: string; // Unique session identifier for the connection
   misbehavior_score: number; // Score tracking peer misbehavior (0 for no issues)
-}
-
-export interface DashboardNode {
-  nodeIndex: number;
-  name: string;
-  host: string;
-  blockchainInfo: BlockchainInfo;
-  networkInfo: NetworkInfo;
-  error?: string;
-}
-
-export interface DashboardResponse {
-  success: boolean;
-  data?: Array<DashboardNode>;
-  error?: string;
 }
 
 export interface BitcoinNodeCredential {

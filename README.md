@@ -1,6 +1,6 @@
 # Bitcoin Node Hub
 
-Bitcoin Node Hub was originally designed to help us at Dig-A-Hash monitor and view detailed information about our multiple Bitcoin nodes. This is particularly useful for managing low-power, headless nodes that lack a dedicated monitor. Key features include real-time blockchain info, connection details, and more.
+Bitcoin Node Hub is used to monitor and view information about multiple Bitcoin nodes. This is particularly useful for managing low-power, headless nodes that lack a dedicated monitor. Key features include real-time blockchain info, connection details, and more.
 
 ### Dark Mode
 

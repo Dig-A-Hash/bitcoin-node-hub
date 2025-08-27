@@ -1,38 +1,45 @@
-import { getBitcoinClients } from '~~/server/utils/bitcoinCoreClients';
-import {
-  NetworkInfo,
-  BlockchainInfo,
-  DashboardResponse,
-} from '~~/server/utils/bitcoinCoreTypes';
-import BitcoinCore from 'bitcoin-core';
+import { DashboardNode, DashboardResponse } from '~~/server/types/dashboard';
+import { NetworkInfo, BlockchainInfo } from '~~/server/types/bitcoinCore';
 
-/**
- * Fetches multiple Bitcoin node metrics for dashboard display.
- */
 export default defineEventHandler(async (): Promise<DashboardResponse> => {
   try {
-    const clients = getBitcoinClients();
-    const nodes: BitcoinNodeCredential[] = process.env.BITCOIN_NODES
-      ? JSON.parse(process.env.BITCOIN_NODES)
-      : [];
-    const metricsPromises = clients.map(
-      async (client: BitcoinCore, index: number) => {
+    const bitcoinNodeCredentials = getBitcoinNodeCredentials();
+
+    const metricsPromises = bitcoinNodeCredentials.map(
+      async (bitcoinNodeCredential, index) => {
         try {
+          const rpc = createBitcoinRpc(bitcoinNodeCredential);
+
           const [networkInfo, blockchainInfo] = await Promise.all([
-            client.getNetworkInfo(),
-            client.getBlockchainInfo(),
+            rpc
+              .post('', {
+                jsonrpc: '1.0',
+                id: 'nuxt-rpc',
+                method: 'getnetworkinfo',
+                params: [],
+              })
+              .then((res) => res.data.result),
+            rpc
+              .post('', {
+                jsonrpc: '1.0',
+                id: 'nuxt-rpc',
+                method: 'getblockchaininfo',
+                params: [],
+              })
+              .then((res) => res.data.result),
           ]);
           return {
             nodeIndex: index,
-            name: nodes[index].name,
-            host: client.host,
+            name: bitcoinNodeCredential.name,
+            host: bitcoinNodeCredential.host,
             networkInfo: networkInfo as NetworkInfo,
             blockchainInfo: blockchainInfo as BlockchainInfo,
           } as DashboardNode;
         } catch (error: any) {
+          console.error(`Node ${index} error:`, error.message);
           return {
             nodeIndex: index,
-            host: client.host,
+            host: bitcoinNodeCredential.host,
             error: `Node ${index} failed: ${error.message}`,
           };
         }
@@ -40,9 +47,9 @@ export default defineEventHandler(async (): Promise<DashboardResponse> => {
     );
 
     const results = await Promise.allSettled(metricsPromises);
-    const formattedResults = results.map((result) => {
-      return result.status === 'fulfilled' ? result.value : result.reason;
-    });
+    const formattedResults = results.map((result) =>
+      result.status === 'fulfilled' ? result.value : result.reason
+    );
 
     return {
       success: true,
