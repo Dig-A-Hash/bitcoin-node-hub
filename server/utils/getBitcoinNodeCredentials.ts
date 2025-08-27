@@ -18,7 +18,10 @@ export function getBitcoinNodeCredentials(
   if (host) {
     const matchingNode = nodes.find((node) => node.host === host);
     if (!matchingNode) {
-      throw new Error(`No node found with host: ${host}`);
+      const err = new Error();
+      err.name = 'ZodError';
+      err.message = `No node found with host: ${host}`;
+      throw err;
     }
 
     return [matchingNode];
