@@ -1,5 +1,7 @@
 import credentialsFromFile from '~~/server/utils/bitcoinNodeCredentials.json';
 import { BitcoinNodeCredential } from '~~/server/types/bitcoinCore';
+import { StatusError } from '~~/server/utils/errors';
+import { HttpStatusCode } from 'axios';
 
 export function getBitcoinNodeCredentials(
   host?: string
@@ -18,10 +20,7 @@ export function getBitcoinNodeCredentials(
   if (host) {
     const matchingNode = nodes.find((node) => node.host === host);
     if (!matchingNode) {
-      const err = new Error();
-      err.name = 'ZodError';
-      err.message = `No node found with host: ${host}`;
-      throw err;
+      throw new StatusError(HttpStatusCode.NotFound, `Host Not Found: ${host}`);
     }
 
     return [matchingNode];

@@ -6,9 +6,3 @@ export interface DashboardNode {
   networkInfo: NetworkInfo;
   error?: string;
 }
-
-export interface DashboardResponse {
-  success: boolean;
-  data?: Array<DashboardNode>;
-  error?: string;
-}
