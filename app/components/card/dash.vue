@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import {
-  type DashboardNode,
-  type DashboardResponse,
-} from '~~/server/utils/bitcoinCoreTypes';
-
+const router = useRouter();
 const { dashboardNode } = defineProps<{
   dashboardNode: DashboardNode;
 }>();
@@ -29,6 +25,10 @@ const nodeProgress = computed(() => {
         : 0,
   };
 });
+
+function navigateToPeers(index: number) {
+  router.push(`peers?i=${index}`);
+}
 </script>
 <template>
   <card-node v-if="!dashboardNode.error" header-class="">
@@ -160,7 +160,11 @@ const nodeProgress = computed(() => {
         </UTooltip>
       </div>
       <UTooltip text="View details about the connections.">
-        <UButton color="secondary" variant="subtle" icon="solar:global-outline"
+        <UButton
+          @click="navigateToPeers(dashboardNode.nodeIndex)"
+          color="secondary"
+          variant="subtle"
+          icon="solar:global-outline"
           >Details</UButton
         >
       </UTooltip>

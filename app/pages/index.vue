@@ -1,10 +1,10 @@
-<!-- src/components/Dashboard.vue -->
 <script setup lang="ts">
-import type { ApiResponse } from '~~/server/types/apiResponse';
-import { type DashboardNode } from '~~/server/types/dashboard';
+import type { ApiResponse } from '~~/shared/types/apiResponse';
+import { type DashboardNode } from '~~/shared/types/dashboard';
 
 const toast = useToast();
 const apiResponse = ref<ApiResponse<DashboardNode[]>>();
+const bitcoinStore = useBitcoin();
 
 // Fetch data
 async function fetchDashboard() {
@@ -39,8 +39,15 @@ const copyAddress = async (address: string) => {
   }
 };
 
-onMounted(() => {
-  fetchDashboard();
+onMounted(async () => {
+  await fetchDashboard();
+
+  // Save dashboard data to the bitcoinStore.
+  if (apiResponse.value) {
+    bitcoinStore.dashboardNodes = apiResponse.value.data
+      ? apiResponse.value.data
+      : [];
+  }
 });
 </script>
 

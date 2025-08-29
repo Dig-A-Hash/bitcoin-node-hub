@@ -1,4 +1,3 @@
-<!-- layouts/default.vue -->
 <template>
   <div>
     <!-- Header -->
