@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { BlockchainInfo } from '~~/server/types/bitcoinCore';
-import { ApiResponse } from '~~/server/types/apiResponse';
+import { BlockchainInfo } from '~~/shared/types/bitcoinCore';
+import { ApiResponse } from '~~/shared/types/apiResponse';
 import { sendErrorResponse } from '../utils/errors';
 
 export default defineEventHandler(

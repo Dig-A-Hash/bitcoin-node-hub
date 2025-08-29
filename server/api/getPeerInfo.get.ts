@@ -1,12 +1,14 @@
 import { z } from 'zod';
-import { PeerInfo } from '~~/server/types/bitcoinCore';
-import { ApiResponse } from '~~/server/types/apiResponse';
+import { PeerInfo } from '~~/shared/types/bitcoinCore';
+import { ApiResponse } from '~~/shared/types/apiResponse';
 import { sendErrorResponse } from '../utils/errors';
 
 export default defineEventHandler(
   async (event): Promise<ApiResponse<PeerInfo[]>> => {
     try {
-      const { host } = z.object({ host: z.string() }).parse(getQuery(event));
+      const { host } = z
+        .object({ host: z.string().min(7).max(15) })
+        .parse(getQuery(event));
       const bitcoinNodeCredentials = getBitcoinNodeCredentials(host as string);
       const rpc = createBitcoinRpc(bitcoinNodeCredentials[0]);
 

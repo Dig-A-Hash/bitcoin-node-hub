@@ -1,5 +1,5 @@
 import credentialsFromFile from '~~/server/utils/bitcoinNodeCredentials.json';
-import { BitcoinNodeCredential } from '~~/server/types/bitcoinCore';
+import { BitcoinNodeCredential } from '~~/shared/types/bitcoinCore';
 import { StatusError } from '~~/server/utils/errors';
 import { HttpStatusCode } from 'axios';
 

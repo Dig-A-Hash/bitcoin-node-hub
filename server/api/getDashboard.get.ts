@@ -1,6 +1,6 @@
-import { DashboardNode } from '~~/server/types/dashboard';
-import { NetworkInfo, BlockchainInfo } from '~~/server/types/bitcoinCore';
-import { ApiResponse } from '~~/server/types/apiResponse';
+import { DashboardNode } from '~~/shared/types/dashboard';
+import { NetworkInfo, BlockchainInfo } from '~~/shared/types/bitcoinCore';
+import { ApiResponse } from '~~/shared/types/apiResponse';
 import { sendErrorResponse } from '../utils/errors';
 
 export default defineEventHandler(
