@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+@import 'ol/ol.css';
 
 @theme static {
   --color-green-subtle: rgba(3, 242, 51, 0.1);
@@ -24,3 +25,7 @@ html.dark body {
   background-size: cover;
 }
 
+.map-container {
+  width: 100%;
+  height: 500px;
+}

@@ -4,7 +4,7 @@ import { ApiResponse } from '~~/server/types/apiResponse';
 import { sendErrorResponse } from '../utils/errors';
 
 export default defineEventHandler(
-  async (event): Promise<ApiResponse<PeerInfo>> => {
+  async (event): Promise<ApiResponse<PeerInfo[]>> => {
     try {
       const { host } = z.object({ host: z.string() }).parse(getQuery(event));
       const bitcoinNodeCredentials = getBitcoinNodeCredentials(host as string);
@@ -19,8 +19,8 @@ export default defineEventHandler(
 
       return {
         success: true,
-        data: response.data.result as PeerInfo,
-      } as ApiResponse<PeerInfo>;
+        data: response.data.result as PeerInfo[],
+      } as ApiResponse<PeerInfo[]>;
     } catch (error: any) {
       return sendErrorResponse(event, error);
     }
