@@ -8,11 +8,14 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "preload-geolite2": "node -e \"import('geolite2-redist').then(geolite => geolite.downloadDbs())\""
   },
   "dependencies": {
+    "@maxmind/geoip2-node": "^6.1.0",
     "@nuxt/ui": "^3.3.0",
     "axios": "^1.11.0",
+    "geolite2-redist": "^3.1.1",
     "nuxt": "^4.0.3",
     "typescript": "^5.9.2",
     "vue": "^3.5.18",
