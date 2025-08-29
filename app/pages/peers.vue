@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue';
-import { type ApiResponse } from '~~/server/types/apiResponse';
-import type { PeerInfo } from '~~/server/types/bitcoinCore';
-import type { GeoIpResponse } from '~~/server/types/geoip';
+import { type ApiResponse } from '~~/shared/types/apiResponse';
+import type { PeerInfo } from '~~/shared/types/bitcoinCore';
+import type { GeoIpResponse } from '~~/shared/types/geoip';
 import { Map, View } from 'ol';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
@@ -15,20 +15,24 @@ import { Style } from 'ol/style';
 import Circle from 'ol/style/Circle';
 import Fill from 'ol/style/Fill';
 
+const route = useRoute();
+const nodeIndex = parseInt(route.query.i ? route.query.i.toString() : '0');
+const bitcoinStore = useBitcoin();
+const dashboardNode = ref(bitcoinStore.dashboardNodes[nodeIndex]);
+
 const apiResponse = ref<ApiResponse<PeerInfo[]>>();
 const geoLocations = ref<GeoIpResponse[]>([]);
 const mapContainer = ref<HTMLDivElement | null>(null);
 let map: Map | null = null;
-const isLoading = ref(true); // Add loading state
+const isLoading = ref(true);
 
 async function fetchPeers() {
-  isLoading.value = true; // Set loading to true before fetch
+  isLoading.value = true;
   try {
-    console.log('Fetching peers from /api/getPeerInfo?host=192.168.7.250');
     const response = await $fetch<ApiResponse<PeerInfo[]>>(
-      '/api/getPeerInfo?host=192.168.7.250'
+      '/api/getPeerInfo?host=' + dashboardNode.value?.host
     );
-    console.log('API Response:', response);
+
     if (response.success && response.data && response.data.length > 0) {
       apiResponse.value = response;
       console.log('Fetched peer data:', response.data);
@@ -36,12 +40,12 @@ async function fetchPeers() {
       await nextTick();
       renderMap();
     } else {
-      console.warn('API response missing success or data:', response);
+      console.error('API response missing success or data:', response);
     }
   } catch (error) {
     console.error('Error fetching peers:', error);
   } finally {
-    isLoading.value = false; // Set loading to false after fetch
+    isLoading.value = false;
   }
 }
 
@@ -55,8 +59,8 @@ async function fetchGeoLocations(peers: PeerInfo[]) {
           peer.network === 'onion'
       )
       .map((peer) => {
-        const addr = peer.addr.split(':')[0].replace('[', '').replace(']', '');
-        return addr.includes('.onion') ? peer.addr : addr; // Keep full .onion address
+        const addr = peer.addr.split(':')[0]?.replace('[', '').replace(']', '');
+        return addr?.includes('.onion') ? peer.addr : addr; // Keep full .onion address
       })
       .filter((addr) => addr !== '127.0.0.1')
   );
@@ -68,22 +72,28 @@ async function fetchGeoLocations(peers: PeerInfo[]) {
 
   for (const addr of ipSet) {
     let resolvedAddr = addr;
-    if (addr.includes('.onion')) {
+    if (addr?.includes('.onion')) {
       console.log(
         `.onion address detected: ${addr} - skipped due to lack of geo support`
       );
       continue; // Skip .onion addresses
-    } else if (!ipv4Regex.test(addr) && !ipv6Regex.test(addr)) {
+    } else if (
+      !ipv4Regex.test(addr ? addr : '') &&
+      !ipv6Regex.test(addr ? addr : '')
+    ) {
       try {
-        const response = await $fetch(
+        const response: any = await $fetch(
           `https://dns.google/resolve?name=${addr}`
         );
-        resolvedAddr = response.Answer?.[0]?.data || addr; // Extract IP if resolved
+        resolvedAddr = response?.Answer?.[0]?.data || addr; // Extract IP if resolved
       } catch (error) {
         console.warn(`DNS resolution failed for ${addr}:`, error);
       }
     }
-    if (!ipv4Regex.test(resolvedAddr) && !ipv6Regex.test(resolvedAddr)) {
+    if (
+      !ipv4Regex.test(resolvedAddr || '') &&
+      !ipv6Regex.test(resolvedAddr || '')
+    ) {
       console.warn(`Skipping unresolved address: ${addr}`);
       continue;
     }
@@ -94,7 +104,7 @@ async function fetchGeoLocations(peers: PeerInfo[]) {
           parseResponse: JSON.parse,
         }
       );
-      newGeoLocations.push({ ...response, ip: resolvedAddr });
+      newGeoLocations.push({ ...response, ip: resolvedAddr || '' });
     } catch (error) {
       console.error(`Error fetching geolocation for ${resolvedAddr}:`, error);
     }
@@ -124,7 +134,7 @@ function renderMap() {
 
   if (map) {
     map.setLayers([]);
-    map.setSource(null);
+    // map.setSource(null);
     map.dispose();
   }
   map = new Map({
@@ -155,19 +165,20 @@ function renderMap() {
   }
 }
 
-onMounted(() => {
-  fetchPeers();
+onMounted(async () => {
+  await fetchPeers();
 });
 </script>
 
 <template>
   <UContainer class="mt-4">
+    <h1 class="text-xl mb-2">{{ dashboardNode?.name }} Connection Details</h1>
     <div class="grid grid-cols-1 gap-4">
       <div ref="mapContainer" class="w-full h-[500px]"></div>
       <div v-if="isLoading" class="text-center text-gray-500">
         Loading peer data...
       </div>
-      <div v-else-if="apiResponse.data" class="overflow-x-auto">
+      <div v-else-if="apiResponse?.data" class="overflow-x-auto">
         <table class="min-w-full border border-gray-200">
           <thead>
             <tr class="">
@@ -197,17 +208,3 @@ onMounted(() => {
     </div>
   </UContainer>
 </template>
-
-<style scoped>
-.map-container {
-  width: 100%;
-  height: 500px;
-}
-table {
-  border-collapse: collapse;
-}
-th,
-td {
-  text-align: left;
-}
-</style>
