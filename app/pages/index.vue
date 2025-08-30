@@ -39,7 +39,7 @@ const copyAddress = async (address: string) => {
   }
 };
 
-onMounted(async () => {
+async function fetchAndCache() {
   await fetchDashboard();
 
   // Save dashboard data to the bitcoinStore.
@@ -47,6 +47,20 @@ onMounted(async () => {
     bitcoinStore.dashboardNodes = apiResponse.value.data
       ? apiResponse.value.data
       : [];
+  }
+}
+const intervalRef = ref<NodeJS.Timeout | number | null>(null);
+
+onMounted(async () => {
+  // Run immediately on mount
+  await fetchAndCache();
+  // Set up interval to run every 60 seconds
+  intervalRef.value = setInterval(fetchAndCache, 60000);
+});
+
+onUnmounted(() => {
+  if (intervalRef.value !== null) {
+    clearInterval(intervalRef.value);
   }
 });
 </script>
