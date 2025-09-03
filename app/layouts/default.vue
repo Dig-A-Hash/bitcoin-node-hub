@@ -24,7 +24,12 @@
     </header>
 
     <!-- Nav Drawer -->
-    <UDrawer v-model:open="isOpen" direction="left" :ui="{ content: 'w-64' }">
+    <USlideover
+      v-model:open="isOpen"
+      :ui="{ content: 'w-64', body: 'p-2 sm:p-2' }"
+      side="left"
+      title="Bitcoin Node Hub"
+    >
       <template #body>
         <UNavigationMenu
           :items="navItems"
@@ -32,7 +37,7 @@
           class="w-full"
         />
       </template>
-    </UDrawer>
+    </USlideover>
 
     <!-- Main content -->
     <slot />
@@ -44,40 +49,17 @@ import type { NavigationMenuItem } from '@nuxt/ui';
 
 // State to control drawer
 const isOpen = ref(false);
+const router = useRouter();
 
 // Navigation items
 const navItems = ref<NavigationMenuItem[]>([
   {
-    label: 'Home',
-    icon: 'i-lucide-home',
+    label: 'Dashboard',
+    icon: 'material-symbols:dashboard',
     to: '/',
-  },
-  {
-    label: 'About',
-    icon: 'i-lucide-info',
-    to: '/about',
-  },
-  {
-    label: 'Services',
-    icon: 'i-lucide-briefcase',
-    to: '/services',
-    children: [
-      {
-        label: 'Consulting',
-        description: 'Expert consulting services',
-        to: '/services/consulting',
-      },
-      {
-        label: 'Development',
-        description: 'Custom software development',
-        to: '/services/development',
-      },
-    ],
-  },
-  {
-    label: 'Contact',
-    icon: 'i-lucide-mail',
-    to: '/contact',
+    onSelect: () => {
+      isOpen.value = false; // Close the slideover
+    },
   },
 ]);
 
