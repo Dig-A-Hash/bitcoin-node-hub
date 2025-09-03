@@ -16,6 +16,7 @@ import { Style } from 'ol/style';
 import Circle from 'ol/style/Circle';
 import Fill from 'ol/style/Fill';
 import Stroke from 'ol/style/Stroke';
+import { UBadge } from '#components';
 
 // Configurable Items
 const INBOUND_COLOR = '#f7931a'; // Orange
@@ -50,10 +51,28 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
       const city = row.original.geo?.city ?? 'N/A';
       const country = row.original.geo?.country ?? 'N/A';
       return h('div', { class: 'flex flex-col cursor-pointer' }, [
-        h('div', { class: 'font-bold  truncate max-w-[200px]' }, address),
+        h('div', { class: 'font-bold  truncate max-w-[150px]' }, address),
         h('div', { class: 'text-gray-500' }, `${city}, ${country}`),
-        h('div', { class: 'text-gray-500' }, `${type}`),
+        h('div', { class: 'text-gray-500 text-xs' }, `${type}`),
       ]);
+    },
+  },
+  {
+    accessorKey: 'inbound',
+    header: 'In/Out',
+    cell: ({ row }) => {
+      const inBound = row.original.inbound;
+      return h(
+        UBadge,
+        {
+          variant: 'solid',
+          class: `uppercase text-white ${
+            inBound ? 'bg-amber-600' : 'bg-blue-500'
+          }`,
+          size: 'sm',
+        },
+        inBound ? 'In' : 'Out'
+      );
     },
   },
 ];
@@ -346,13 +365,13 @@ onUnmounted(() => {
 <template>
   <div class="mt-4 mx-4">
     <h1 class="text-xl mb-2 text-white">
-      {{ dashboardNode?.name }} Connection Details
+      {{ dashboardNode?.name }} Connection Explorer
     </h1>
 
     <div class="flex space-x-4 mt-4">
       <card-node class="w-100">
         <template #header>
-          <div class="p-2">Connected Nodes List</div>
+          <div class="p-2">Connected Nodes</div>
         </template>
         <div>
           <div v-if="isLoading" class="text-center text-gray-400">
@@ -377,7 +396,7 @@ onUnmounted(() => {
       </card-node>
       <card-node class="w-full">
         <template #header>
-          <div class="p-2">Connected Nodes Map</div>
+          <div class="p-2">Geographic Connection Map</div>
         </template>
         <div>
           <div
@@ -392,51 +411,67 @@ onUnmounted(() => {
   </div>
 
   <!-- Drawer for Peer Details -->
-  <UDrawer
+  <USlideover
     v-model:open="isDrawerOpen"
-    title="Peer Details"
     direction="right"
     :overlay="false"
+    title="Peer Details"
     :handle="false"
     :modal="false"
     class="w-full max-w-md"
+    close-icon="solar:close-square-bold"
   >
     <template #body>
       <div class="">
         <div v-if="selectedPeer">
-          <UCard class="mb-6">
-            <template #header>
-              <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
-                Peer Overview
-              </h2>
-            </template>
-            <div class="grid grid-cols-1 gap-3 p-4 text-sm">
-              <div class="flex justify-between">
-                <span class="font-medium text-gray-700 dark:text-gray-300"
-                  >Peer ID</span
-                >
-                <span>{{ selectedPeer.id }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="font-medium text-gray-700 dark:text-gray-300"
-                  >Address</span
-                >
-                <span>{{ selectedPeer.addr }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="font-medium text-gray-700 dark:text-gray-300"
-                  >Connection Type</span
-                >
-                <span>{{ selectedPeer.connection_type || 'N/A' }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="font-medium text-gray-700 dark:text-gray-300"
-                  >Inbound</span
-                >
-                <span>{{ selectedPeer.inbound ? 'Yes' : 'No' }}</span>
-              </div>
+          <div class="grid grid-cols-1 gap-3 p-4 pt-0 text-sm">
+            <div class="flex justify-between items-center">
+              <span class="font-medium text-gray-700 dark:text-gray-300"
+                >Peer ID</span
+              >
+              <UBadge
+                :color="selectedPeer.inbound ? 'warning' : 'secondary'"
+                variant="subtle"
+                size="lg"
+                >{{ selectedPeer.id }}</UBadge
+              >
             </div>
-          </UCard>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-700 dark:text-gray-300"
+                >Address</span
+              >
+              <UBadge
+                :color="selectedPeer.inbound ? 'warning' : 'secondary'"
+                variant="subtle"
+                size="lg"
+                class="max-w-52 overflow-hidden"
+              >
+                {{ selectedPeer.addr }}</UBadge
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-700 dark:text-gray-300"
+                >Connection Type</span
+              >
+              <UBadge
+                :color="selectedPeer.inbound ? 'warning' : 'secondary'"
+                variant="subtle"
+                size="lg"
+                >{{ selectedPeer.connection_type || 'N/A' }}</UBadge
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-700 dark:text-gray-300"
+                >Inbound</span
+              >
+              <UBadge
+                :color="selectedPeer.inbound ? 'warning' : 'secondary'"
+                variant="subtle"
+                size="lg"
+                >{{ selectedPeer.inbound ? 'True' : 'False' }}</UBadge
+              >
+            </div>
+          </div>
 
           <UTabs
             :items="[
@@ -445,10 +480,11 @@ onUnmounted(() => {
               { label: 'Traffic', slot: 'traffic' },
               { label: 'Geo', slot: 'geo' },
             ]"
+            :color="selectedPeer.inbound ? 'warning' : 'secondary'"
             class="mt-4"
           >
             <template #network>
-              <UCard>
+              <card-node>
                 <div class="grid grid-cols-1 gap-3 p-4 text-sm">
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
@@ -456,26 +492,32 @@ onUnmounted(() => {
                     >
                     <span>{{ selectedPeer.network }}</span>
                   </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Services</span
                     >
-                    <span>{{
-                      selectedPeer.servicesnames?.join(', ') || 'N/A'
-                    }}</span>
+                    <span class="max-w-52 text-right text-xs">
+                      {{ selectedPeer.servicesnames?.join(', ') || 'N/A' }}
+                    </span>
                   </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Software Version</span
                     >
-                    <span>{{ selectedPeer.subver || 'N/A' }}</span>
+                    <span class="max-w-52 text-right">{{
+                      selectedPeer.subver || 'N/A'
+                    }}</span>
                   </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Protocol Version</span
                     >
                     <span>{{ selectedPeer.version || 'N/A' }}</span>
                   </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Transport Protocol</span
@@ -485,11 +527,11 @@ onUnmounted(() => {
                     }}</span>
                   </div>
                 </div>
-              </UCard>
+              </card-node>
             </template>
 
             <template #blockchain>
-              <UCard>
+              <card-node>
                 <div class="grid grid-cols-1 gap-3 p-4 text-sm">
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
@@ -497,18 +539,21 @@ onUnmounted(() => {
                     >
                     <span>{{ selectedPeer.startingheight || 'N/A' }}</span>
                   </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Synced Blocks</span
                     >
                     <span>{{ selectedPeer.synced_blocks || 'N/A' }}</span>
                   </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Synced Headers</span
                     >
                     <span>{{ selectedPeer.synced_headers || 'N/A' }}</span>
                   </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Min Fee Filter</span
@@ -520,11 +565,11 @@ onUnmounted(() => {
                     }}</span>
                   </div>
                 </div>
-              </UCard>
+              </card-node>
             </template>
 
             <template #traffic>
-              <UCard>
+              <card-node>
                 <div class="grid grid-cols-1 gap-3 p-4 text-sm">
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
@@ -532,12 +577,14 @@ onUnmounted(() => {
                     >
                     <span>{{ formatBytes(selectedPeer.bytessent) }}</span>
                   </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Bytes Received</span
                     >
                     <span>{{ formatBytes(selectedPeer.bytesrecv) }}</span>
                   </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Ping Time</span
@@ -548,6 +595,7 @@ onUnmounted(() => {
                         : 'N/A'
                     }}</span>
                   </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Min Ping</span
@@ -558,6 +606,7 @@ onUnmounted(() => {
                         : 'N/A'
                     }}</span>
                   </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Connection Time</span
@@ -565,11 +614,11 @@ onUnmounted(() => {
                     <span>{{ formatTimestamp(selectedPeer.conntime) }}</span>
                   </div>
                 </div>
-              </UCard>
+              </card-node>
             </template>
 
             <template #geo>
-              <UCard>
+              <card-node>
                 <div class="grid grid-cols-1 gap-3 p-4 text-sm">
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
@@ -577,18 +626,28 @@ onUnmounted(() => {
                     >
                     <span>{{ selectedPeer.geo?.city || 'N/A' }}</span>
                   </div>
+                  <USeparator></USeparator>
+                  <div class="flex justify-between">
+                    <span class="font-medium text-gray-700 dark:text-gray-300"
+                      >Postal</span
+                    >
+                    <span>{{ selectedPeer.geo?.postal || 'N/A' }}</span>
+                  </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Country</span
                     >
                     <span>{{ selectedPeer.geo?.country || 'N/A' }}</span>
                   </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Latitude</span
                     >
                     <span>{{ selectedPeer.geo?.latitude || 'N/A' }}</span>
                   </div>
+                  <USeparator></USeparator>
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
                       >Longitude</span
@@ -596,24 +655,16 @@ onUnmounted(() => {
                     <span>{{ selectedPeer.geo?.longitude || 'N/A' }}</span>
                   </div>
                 </div>
-              </UCard>
+              </card-node>
             </template>
           </UTabs>
         </div>
         <div v-else class="text-center py-6">
           <p class="text-gray-500 dark:text-gray-400">No peer selected</p>
         </div>
-        <UButton
-          class="mt-6 w-full"
-          color="primary"
-          variant="solid"
-          @click="isDrawerOpen = false"
-        >
-          Close
-        </UButton>
       </div>
     </template>
-  </UDrawer>
+  </USlideover>
 </template>
 
 <style scoped>
