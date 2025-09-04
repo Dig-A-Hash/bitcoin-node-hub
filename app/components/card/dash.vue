@@ -31,7 +31,7 @@ function navigateToPeers(index: number) {
 }
 </script>
 <template>
-  <card-node v-if="!dashboardNode.error" header-class="">
+  <card-subtle v-if="!dashboardNode.error" header-class="">
     <template #header>
       <div
         class="flex items-center"
@@ -56,11 +56,12 @@ function navigateToPeers(index: number) {
           {{ dashboardNode.name }}
         </div>
         <div class="border-l dark:border-slate-800 light:border-gray-200">
-          <UTooltip text="View node addresses.">
+          <UTooltip text="All node details.">
             <UButton
               class="rounded-none rounded-tr-lg h-12"
               color="secondary"
               variant="ghost"
+              to="/node-info"
             >
               <UIcon size="24" class="" name="solar:info-square-bold"></UIcon>
             </UButton>
@@ -232,8 +233,8 @@ function navigateToPeers(index: number) {
         </UBadge>
       </div>
     </div>
-  </card-node>
-  <card-node v-else header-class="">
+  </card-subtle>
+  <card-subtle v-else header-class="">
     <template #header>
       <div class="flex items-center">
         <div
@@ -284,5 +285,5 @@ function navigateToPeers(index: number) {
         />
       </div>
     </div>
-  </card-node>
+  </card-subtle>
 </template>
