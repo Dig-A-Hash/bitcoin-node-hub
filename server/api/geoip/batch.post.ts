@@ -2,6 +2,7 @@ import { open, GeoIpDbName } from 'geolite2-redist';
 import maxmind, { CityResponse } from 'maxmind';
 import { StatusError } from '~~/server/utils/errors';
 import { HttpStatusCode } from 'axios';
+import { GeoIpResponse } from '~~/shared/types/geoip';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -34,19 +35,21 @@ export default defineEventHandler(async (event) => {
           ip,
           country: 'Unknown',
           city: 'Unknown',
+          state: 'Unknown',
           postal: 'Unknown',
           latitude: null,
           longitude: null,
-        };
+        } as GeoIpResponse;
       }
       return {
         ip,
         country: lookup.country?.iso_code || 'Unknown',
+        state: lookup.subdivisions?.[0]?.names?.en || 'Unknown',
         city: lookup.city?.names?.en || 'Unknown',
         postal: lookup.postal?.code || 'Unknown',
         latitude: lookup.location?.latitude || null,
         longitude: lookup.location?.longitude || null,
-      };
+      } as GeoIpResponse;
     });
 
     reader.close();

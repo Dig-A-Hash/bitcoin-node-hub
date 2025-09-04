@@ -369,9 +369,9 @@ onUnmounted(() => {
     </h1>
 
     <div class="flex space-x-4 mt-4">
-      <card-node class="w-100">
+      <card-subtle class="w-100">
         <template #header>
-          <div class="p-2">Connected Nodes</div>
+          <div class="p-2">{{ combinedPeerData.length }} Connected Nodes</div>
         </template>
         <div>
           <div v-if="isLoading" class="text-center text-gray-400">
@@ -393,8 +393,8 @@ onUnmounted(() => {
             No peer data available or error occurred
           </div>
         </div>
-      </card-node>
-      <card-node class="w-full">
+      </card-subtle>
+      <card-subtle class="w-full">
         <template #header>
           <div class="p-2">Geographic Connection Map</div>
         </template>
@@ -406,7 +406,7 @@ onUnmounted(() => {
           ></div>
           <div ref="tooltipContainer" class="tooltip"></div>
         </div>
-      </card-node>
+      </card-subtle>
     </div>
   </div>
 
@@ -484,7 +484,7 @@ onUnmounted(() => {
             class="mt-4"
           >
             <template #network>
-              <card-node>
+              <card-subtle>
                 <div class="grid grid-cols-1 gap-3 p-4 text-sm">
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
@@ -527,11 +527,11 @@ onUnmounted(() => {
                     }}</span>
                   </div>
                 </div>
-              </card-node>
+              </card-subtle>
             </template>
 
             <template #blockchain>
-              <card-node>
+              <card-subtle>
                 <div class="grid grid-cols-1 gap-3 p-4 text-sm">
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
@@ -565,11 +565,11 @@ onUnmounted(() => {
                     }}</span>
                   </div>
                 </div>
-              </card-node>
+              </card-subtle>
             </template>
 
             <template #traffic>
-              <card-node>
+              <card-subtle>
                 <div class="grid grid-cols-1 gap-3 p-4 text-sm">
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
@@ -614,11 +614,11 @@ onUnmounted(() => {
                     <span>{{ formatTimestamp(selectedPeer.conntime) }}</span>
                   </div>
                 </div>
-              </card-node>
+              </card-subtle>
             </template>
 
             <template #geo>
-              <card-node>
+              <card-subtle>
                 <div class="grid grid-cols-1 gap-3 p-4 text-sm">
                   <div class="flex justify-between">
                     <span class="font-medium text-gray-700 dark:text-gray-300"
@@ -655,7 +655,7 @@ onUnmounted(() => {
                     <span>{{ selectedPeer.geo?.longitude || 'N/A' }}</span>
                   </div>
                 </div>
-              </card-node>
+              </card-subtle>
             </template>
           </UTabs>
         </div>
