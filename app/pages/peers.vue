@@ -22,7 +22,7 @@ import { UBadge } from '#components';
 const INBOUND_COLOR = '#f7931a'; // Orange
 const OUTBOUND_COLOR = '#3399ff'; // Blue
 const STROKE_COLOR = '#000000'; // Black stroke for visibility
-const HEADER_HEIGHT = 168; // Replace with your actual header height (in pixels)
+const HEADER_HEIGHT = 135; // Replace with your actual header height (in pixels)
 
 const route = useRoute();
 const nodeIndex = parseInt(route.query.i ? route.query.i.toString() : '0');
@@ -39,21 +39,28 @@ const isLoading = ref(true);
 const combinedPeerData = ref<(PeerInfo & { geo?: GeoIpResponse })[]>([]);
 const isDrawerOpen = ref(false);
 const selectedPeer = ref<(PeerInfo & { geo?: GeoIpResponse }) | null>(null);
-const mapHeight = ref(0);
+const mapHeight = ref(100);
 
 const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
   {
-    accessorKey: 'geo',
+    id: 'id',
+    accessorKey: 'id',
     header: 'Location',
     cell: ({ row }) => {
       const address = row.original.addr;
       const type = row.original.connection_type;
       const city = row.original.geo?.city ?? 'N/A';
+      const state = row.original.geo?.state ?? 'N/A';
       const country = row.original.geo?.country ?? 'N/A';
-      return h('div', { class: 'flex flex-col cursor-pointer' }, [
+      return h('div', { class: 'flex flex-col cursor-pointer text-gray-500' }, [
         h('div', { class: 'font-bold  truncate max-w-[150px]' }, address),
-        h('div', { class: 'text-gray-500' }, `${city}, ${country}`),
-        h('div', { class: 'text-gray-500 text-xs' }, `${type}`),
+        h(
+          'div',
+          { class: 'truncate max-w-[150px]' },
+          `${city} ${row.original.id}`
+        ),
+        h('div', { class: 'truncate max-w-[150px]' }, `${state}, ${country}`),
+        h('div', { class: 'text-xs truncate max-w-[150px]' }, `${type}`),
       ]);
     },
   },
@@ -71,7 +78,7 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
           }`,
           size: 'sm',
         },
-        inBound ? 'In' : 'Out'
+        () => (inBound ? 'In' : 'Out')
       );
     },
   },
@@ -110,7 +117,6 @@ async function fetchPeers() {
 
     if (response.success && response.data && response.data.length > 0) {
       apiResponse.value = response;
-      console.log('Fetched peer data:', response.data);
       await fetchGeoLocations(response.data);
       await nextTick();
       renderMap();
@@ -134,7 +140,12 @@ async function fetchGeoLocations(peers: PeerInfo[]) {
           peer.network === 'onion'
       )
       .map((peer) => {
-        const addr = peer.addr.split(':')[0]?.replace('[', '').replace(']', '');
+        let addr = peer.addr;
+        if (peer.network === 'ipv6') {
+          addr = addr.replace(/\[|\]/g, '').replace(/:\d+$/, '');
+        } else if (peer.network === 'ipv4') {
+          addr = addr.split(':')[0] || '';
+        }
         return addr?.includes('.onion') ? peer.addr : addr;
       })
       .filter((addr) => addr !== '127.0.0.1')
@@ -143,20 +154,14 @@ async function fetchGeoLocations(peers: PeerInfo[]) {
   const ipv4Regex =
     /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
   const ipv6Regex =
-    /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^([0-9a-fA-F]{1,4}:){1,7}:$|^:?:[0-9a-fA-F]{1,4}(:[0-9a-fA-F]{1,4}){0,6}$/;
+    /^(([0-9a-fA-F]{1,4}:){1,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))$/; // Updated regex
   const validIps: string[] = [];
 
   for (const addr of ipSet) {
     let resolvedAddr = addr;
     if (addr?.includes('.onion')) {
-      console.log(
-        `.onion address detected: ${addr} - skipped due to lack of geo support`
-      );
       continue;
-    } else if (
-      !ipv4Regex.test(addr ? addr : '') &&
-      !ipv6Regex.test(addr ? addr : '')
-    ) {
+    } else if (!ipv4Regex.test(addr || '') && !ipv6Regex.test(addr || '')) {
       try {
         const response: any = await $fetch(
           `https://dns.google/resolve?name=${addr}`
@@ -190,7 +195,10 @@ async function fetchGeoLocations(peers: PeerInfo[]) {
   geoLocations.value = newGeoLocations;
 
   combinedPeerData.value = peers.map((peer) => {
-    const ip = peer.addr.split(':')[0]?.replace('[', '').replace(']', '');
+    const ip =
+      peer.network === 'ipv6'
+        ? peer.addr.replace(/\[|\]/g, '').replace(/:\d+$/, '')
+        : peer.addr.split(':')[0]?.replace('[', '').replace(']', '');
     const geo = newGeoLocations.find((g) => g.ip === ip);
     return { ...peer, geo };
   });
@@ -201,26 +209,20 @@ function renderMap() {
   const vectorSource = new VectorSource();
   combinedPeerData.value.forEach((peer, index) => {
     const geo = peer.geo;
-    if (geo) {
-      const lat = parseFloat(geo.latitude as any);
-      const lon = parseFloat(geo.longitude as any);
-      if (lat && lon && !isNaN(lat) && !isNaN(lon)) {
+    if (geo && geo.latitude && geo.longitude) {
+      const lat = Number(geo.latitude);
+      const lon = Number(geo.longitude);
+      if (!isNaN(lat) && !isNaN(lon)) {
         const feature = new Feature({
           geometry: new Point(fromLonLat([lon, lat])),
-          id: `${geo.ip}-${index}`,
+          index: index,
           inbound: peer.inbound,
           ip: peer.addr,
           city: geo.city || 'N/A',
           country: geo.country || 'N/A',
           connection_type: peer.connection_type || 'N/A',
-          peerData: peer, // Store full peer data
         });
         vectorSource.addFeature(feature);
-        console.log(
-          `Added feature for ${
-            geo.ip
-          } at [${lat}, ${lon}] with ID: ${feature.getId()}`
-        );
       }
     }
   });
@@ -229,6 +231,14 @@ function renderMap() {
     map.setLayers([]);
     map.dispose();
   }
+
+  // Create custom canvas with willReadFrequently
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) {
+    console.warn('Failed to create canvas context with willReadFrequently');
+  }
+
   map = new Map({
     target: mapContainer.value,
     layers: [
@@ -277,7 +287,7 @@ function renderMap() {
     if (!tooltip) return;
     const pixel = map?.getEventPixel(event.originalEvent);
     const feature = map?.forEachFeatureAtPixel(pixel || [0], (feat) => feat, {
-      hitTolerance: 10, // Increase hit tolerance
+      hitTolerance: 10,
     });
     if (feature) {
       const coordinates = (feature.getGeometry() as Point).getCoordinates();
@@ -292,27 +302,43 @@ function renderMap() {
         </div>
       `;
       tooltipContainer.value!.style.display = 'block';
-      mapContainer.value!.style.cursor = 'pointer'; // Pointer cursor on hover
+      mapContainer.value!.style.cursor = 'pointer';
     } else {
       tooltipContainer.value!.style.display = 'none';
-      mapContainer.value!.style.cursor = 'default'; // Default cursor when not hovering
+      mapContainer.value!.style.cursor = 'default';
     }
   });
 
-  // Handle click to open drawer
+  // Handle click to select row and scroll
   map.on('singleclick', (event) => {
     const pixel = map?.getEventPixel(event.originalEvent);
     const feature = map?.forEachFeatureAtPixel(pixel || [0], (feat) => feat, {
-      hitTolerance: 10, // Increase hit tolerance for clicks
+      hitTolerance: 10,
     });
-    console.log('Map clicked, feature:', feature); // Debug log
     if (feature) {
-      selectedPeer.value = feature.get('peerData');
-      isDrawerOpen.value = true;
-      console.log('Selected peer:', selectedPeer.value); // Debug log
+      const index = feature.get('index') as number;
+      const peer = combinedPeerData.value[index];
+      if (peer) {
+        selectedPeer.value = peer;
+        isDrawerOpen.value = true;
+        rowSelection.value = { [index]: true };
+
+        nextTick(() => {
+          setTimeout(() => {
+            const row = document.querySelector('tr[data-selected="true"]');
+            if (row)
+              row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            else console.error('Row not found for index:', index);
+          }, 100);
+        });
+      } else {
+        console.error('No peer at index:', index);
+      }
     } else {
+      console.error('No feature at click');
       isDrawerOpen.value = false;
       selectedPeer.value = null;
+      rowSelection.value = {};
     }
   });
 
@@ -343,12 +369,49 @@ const formatTimestamp = (timestamp: number) => {
   return new Date(timestamp * 1000).toLocaleString();
 };
 
-const rowSelection = ref<Record<string, boolean>>({});
-
+const rowSelection = ref<Record<number, boolean>>({});
 function onSelect(row: TableRow<PeerInfo & { geo?: GeoIpResponse }>) {
-  rowSelection.value = { [row.original.id]: true };
+  // Clear previous selections
+  Object.keys(rowSelection.value).forEach((key) => {
+    rowSelection.value[Number(key)] = false;
+  });
+  row.toggleSelected(true);
   selectedPeer.value = row.original;
-  isDrawerOpen.value = true;
+  //isDrawerOpen.value = true;
+
+  // Zoom to the selected peer's location with zoom-out first
+  if (map && row.original.geo) {
+    const lat = parseFloat(row.original.geo.latitude as any);
+    const lon = parseFloat(row.original.geo.longitude as any);
+    if (!isNaN(lat) && !isNaN(lon)) {
+      map?.render();
+      // Zoom out to world view
+      map.getView().animate(
+        {
+          center: fromLonLat([0, 0]), // Center of the world
+          zoom: 1, // World view zoom level
+          duration: 1500, // Zoom-out duration
+        },
+        () => {
+          map?.render(); // Force redraw after zoom-out
+          // Add delay before zooming in
+          setTimeout(() => {
+            // Zoom in to the selected location
+            map?.getView().animate(
+              {
+                center: fromLonLat([lon, lat]),
+                zoom: 10, // Adjust zoom level as needed
+                duration: 2500, // Zoom-in duration
+              },
+              () => {
+                map?.render(); // Force redraw after zoom-in
+              }
+            );
+          }, 300); // 300ms delay between animations
+        }
+      );
+    }
+  }
 }
 
 onMounted(async () => {
@@ -375,7 +438,12 @@ onUnmounted(() => {
         </template>
         <div>
           <div v-if="isLoading" class="text-center text-gray-400">
-            Loading peer data...
+            <div class="mx-8 my-24">
+              <div class="mb-3">
+                <UProgress color="warning"></UProgress>
+              </div>
+              <div>Fetching Node Info...</div>
+            </div>
           </div>
           <div v-else-if="combinedPeerData.length" class="overflow-x-auto">
             <UTable
@@ -387,6 +455,9 @@ onUnmounted(() => {
               :style="{ height: `${mapHeight}px` }"
               @select="onSelect"
               v-model:row-selection="rowSelection"
+              :ui="{
+                tr: 'data-[selected=true]:bg-elevated/100 data-[selected=true]:border-l-2 border-b-0 data-[selected=true]:border-green-400',
+              }"
             />
           </div>
           <div v-else class="text-center text-gray-400">
@@ -413,10 +484,10 @@ onUnmounted(() => {
   <!-- Drawer for Peer Details -->
   <USlideover
     v-model:open="isDrawerOpen"
+    aria-describedby="undefined"
     direction="right"
     :overlay="false"
     title="Peer Details"
-    :handle="false"
     :modal="false"
     class="w-full max-w-md"
     close-icon="solar:close-square-bold"
