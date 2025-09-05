@@ -25,6 +25,7 @@
 
     <!-- Nav Drawer -->
     <USlideover
+      aria-describedby="undefined"
       v-model:open="isOpen"
       :ui="{ content: 'w-64', body: 'p-2 sm:p-2' }"
       side="left"
