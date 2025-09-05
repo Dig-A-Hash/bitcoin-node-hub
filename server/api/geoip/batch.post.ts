@@ -33,20 +33,20 @@ export default defineEventHandler(async (event) => {
       if (!lookup) {
         return {
           ip,
-          country: 'Unknown',
-          city: 'Unknown',
-          state: 'Unknown',
-          postal: 'Unknown',
+          country: 'Unknown Country',
+          city: 'Unknown City',
+          state: 'Unknown State',
+          postal: 'Unknown Zip',
           latitude: null,
           longitude: null,
         } as GeoIpResponse;
       }
       return {
         ip,
-        country: lookup.country?.iso_code || 'Unknown',
-        state: lookup.subdivisions?.[0]?.names?.en || 'Unknown',
-        city: lookup.city?.names?.en || 'Unknown',
-        postal: lookup.postal?.code || 'Unknown',
+        country: lookup.country?.iso_code || 'Unknown Country',
+        state: lookup.subdivisions?.[0]?.names?.en || 'Unknown State',
+        city: lookup.city?.names?.en || 'Unknown City',
+        postal: lookup.postal?.code || 'Unknown Zip',
         latitude: lookup.location?.latitude || null,
         longitude: lookup.location?.longitude || null,
       } as GeoIpResponse;
