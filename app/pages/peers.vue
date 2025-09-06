@@ -16,7 +16,9 @@ import { Style } from 'ol/style';
 import Circle from 'ol/style/Circle';
 import Fill from 'ol/style/Fill';
 import Stroke from 'ol/style/Stroke';
-import { UBadge } from '#components';
+import { UBadge, UButton } from '#components';
+
+const router = useRouter();
 
 // Configurable Items
 const INBOUND_COLOR = '#f7931a'; // Orange
@@ -52,13 +54,9 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
       const city = row.original.geo?.city ?? 'N/A';
       const state = row.original.geo?.state ?? 'N/A';
       const country = row.original.geo?.country ?? 'N/A';
-      return h('div', { class: 'flex flex-col cursor-pointer text-gray-500' }, [
+      return h('div', { class: 'flex flex-col cursor-pointer' }, [
         h('div', { class: 'font-bold  truncate max-w-[150px]' }, address),
-        h(
-          'div',
-          { class: 'truncate max-w-[150px]' },
-          `${city} ${row.original.id}`
-        ),
+        h('div', { class: 'truncate max-w-[150px]' }, `${city}`),
         h('div', { class: 'truncate max-w-[150px]' }, `${state}, ${country}`),
         h('div', { class: 'text-xs truncate max-w-[150px]' }, `${type}`),
       ]);
@@ -66,20 +64,41 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
   },
   {
     accessorKey: 'inbound',
-    header: 'In/Out',
+    header: '',
     cell: ({ row }) => {
       const inBound = row.original.inbound;
-      return h(
-        UBadge,
-        {
-          variant: 'solid',
-          class: `uppercase text-white ${
-            inBound ? 'bg-amber-600' : 'bg-blue-500'
-          }`,
-          size: 'sm',
-        },
-        () => (inBound ? 'In' : 'Out')
-      );
+      return h('div', { class: '' }, [
+        h('div', { class: 'text-center' }, [
+          h(
+            UBadge,
+            {
+              variant: 'solid',
+              class: `uppercase text-white ${
+                inBound ? 'bg-amber-600' : 'bg-blue-500'
+              }`,
+              size: 'sm',
+            },
+            () => (inBound ? 'In' : 'Out')
+          ),
+        ]),
+        h('div', { class: 'text-center mt-4' }, [
+          h(
+            UButton,
+            {
+              title: 'Peer Details',
+              variant: 'subtle',
+              color: `${inBound ? 'warning' : 'secondary'}`,
+              icon: 'material-symbols:side-navigation',
+              size: 'sm',
+              onClick: () => {
+                selectedPeer.value = row.original;
+                isDrawerOpen.value = true;
+              },
+            },
+            () => ''
+          ),
+        ]),
+      ]);
     },
   },
 ];
@@ -415,6 +434,11 @@ function onSelect(row: TableRow<PeerInfo & { geo?: GeoIpResponse }>) {
 }
 
 onMounted(async () => {
+  if (bitcoinStore.dashboardNodes.length === 0) {
+    router.push('/');
+    return;
+  }
+
   await fetchPeers();
   calculateMapHeight();
   window.addEventListener('resize', calculateMapHeight);
@@ -456,7 +480,8 @@ onUnmounted(() => {
               @select="onSelect"
               v-model:row-selection="rowSelection"
               :ui="{
-                tr: 'data-[selected=true]:bg-elevated/100 data-[selected=true]:border-l-2 border-b-0 data-[selected=true]:border-green-400',
+                tr: 'data-[selected=true]:bg-elevated/100 data-[selected=true]:border-l-2 border-b-1 data-[selected=true]:border-l-green-500',
+                td: 'light:text-gray-700',
               }"
             />
           </div>
