@@ -181,8 +181,8 @@ function navigateToPeers(index: number) {
         class=""
         size="lg"
         :ui="{
-          indicator: 'rounded-none bg-orange-500',
-          base: 'bg-blue-700/70  dark:border border-neutral-800',
+          indicator: 'rounded-none bg-sky-600',
+          base: 'bg-blue-700  dark:border border-neutral-800',
           status: 'light:text-slate-600 dark:text-slate-500',
         }"
       />
@@ -192,7 +192,10 @@ function navigateToPeers(index: number) {
             :text="`${dashboardNode.networkInfo.connections_in} nodes have initiated incoming connections to this node.`"
           >
             <div class="cursor-default">
-              <UBadge size="xl" class="font-bold mr-2 px-4 bg-orange-500">
+              <UBadge
+                size="xl"
+                class="font-bold mr-2 px-4 bg-sky-600/50 border border-sky-600"
+              >
                 <span class="text-neutral-100">
                   {{ dashboardNode.networkInfo.connections_in }}
                 </span>
@@ -207,7 +210,10 @@ function navigateToPeers(index: number) {
           >
             <div class="cursor-default">
               <span class="">Out</span>
-              <UBadge size="xl" class="font-bold ml-2 px-4 bg-blue-700">
+              <UBadge
+                size="xl"
+                class="font-bold ml-2 px-4 bg-blue-700/50 border border-blue-700"
+              >
                 <span class="text-neutral-100">{{
                   dashboardNode.networkInfo.connections_out
                 }}</span>
