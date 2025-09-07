@@ -439,8 +439,8 @@ onMounted(async () => {
     return;
   }
 
-  await fetchPeers();
   calculateMapHeight();
+  await fetchPeers();
   window.addEventListener('resize', calculateMapHeight);
 });
 

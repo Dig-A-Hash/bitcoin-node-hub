@@ -57,7 +57,7 @@ export interface BlockchainInfo {
   difficulty: string; // Current difficulty as a string
   time: number; // Timestamp of the best block
   mediantime: number; // Median time of recent blocks
-  verificationprogress: string; // Progress toward verifying all blocks (0 to 1)
+  verificationprogress: number; // Progress toward verifying all blocks (0 to 1)
   initialblockdownload: boolean; // Whether the node is in initial block download mode
   chainwork: string; // Total work in the chain
   size_on_disk: number; // Blockchain size on disk in bytes

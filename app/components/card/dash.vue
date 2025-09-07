@@ -79,12 +79,21 @@ function navigateToNodeInfo(index: number) {
     <div class="p-4 pb-0">
       <div class="flex justify-between items-center">
         <h2 class="text-lg">Blockchain Info</h2>
-        <div class="text-sm">
-          ({{
-            dashboardNode.blockchainInfo.chain === 'main'
-              ? 'Mainnet'
-              : 'Testnet'
-          }})
+        <div class="flex">
+          <div class="text-sm">
+            ({{
+              dashboardNode.blockchainInfo.chain === 'main'
+                ? 'Mainnet'
+                : 'Testnet'
+            }})
+          </div>
+          <UIcon
+            title="Initial Block Download (IBD) Mode"
+            name="material-symbols:refresh"
+            v-if="dashboardNode.blockchainInfo.initialblockdownload"
+            class="spinner ml-2"
+            size="24"
+          />
         </div>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
@@ -114,14 +123,6 @@ function navigateToNodeInfo(index: number) {
         </card-tile>
         <card-tile>
           <div class="p-2 px-4">
-            <div class="text-3xl capitalize">
-              {{ dashboardNode.blockchainInfo.pruned }}
-            </div>
-            <div>Pruned</div>
-          </div>
-        </card-tile>
-        <card-tile>
-          <div class="p-2 px-4">
             <div class="text-3xl">
               {{
                 (
@@ -135,6 +136,27 @@ function navigateToNodeInfo(index: number) {
               GB
             </div>
             <div>Size on Disk</div>
+          </div>
+        </card-tile>
+        <card-tile
+          v-if="dashboardNode.blockchainInfo.initialblockdownload"
+          class="bg-success-500/20"
+        >
+          <div class="p-2 px-4">
+            <div class="text-3xl capitalize">
+              {{
+                dashboardNode.blockchainInfo.verificationprogress.toFixed(2)
+              }}%
+            </div>
+            <div>Sync Progress</div>
+          </div>
+        </card-tile>
+        <card-tile v-else>
+          <div class="p-2 px-4">
+            <div class="text-3xl capitalize">
+              {{ dashboardNode.blockchainInfo.warnings.length }}
+            </div>
+            <div>Warnings</div>
           </div>
         </card-tile>
       </div>
@@ -190,7 +212,7 @@ function navigateToNodeInfo(index: number) {
           status: 'light:text-slate-600 dark:text-slate-500',
         }"
       />
-      <div class="mt-2 flex justify-between">
+      <div class="mt-4 flex justify-between">
         <div>
           <UTooltip
             :text="`${dashboardNode.networkInfo.connections_in} nodes have initiated incoming connections to this node.`"

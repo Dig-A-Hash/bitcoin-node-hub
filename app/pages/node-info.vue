@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ApiResponse } from '~~/shared/types/apiResponse';
+import type { NodeInfo } from '~~/shared/types/nodeInfo';
 
 const apiResponse = ref<ApiResponse<NodeInfo>>();
 const bitcoinStore = useBitcoin();
@@ -95,7 +96,7 @@ onMounted(async () => {
             </div>
             <div class="flex justify-between">
               <span class="">Difficulty</span>
-              <span class="">{{ apiResponse.data.difficulty.toFixed(2) }}</span>
+              <span class="">{{ apiResponse.data.difficulty }}</span>
             </div>
             <div class="flex justify-between">
               <span class="">Size on Disk</span>
@@ -104,12 +105,18 @@ onMounted(async () => {
               }}</span>
             </div>
             <div class="flex justify-between">
+              <span class="">Initial Block Download (IBD) Mode</span>
+              <span class="">{{
+                apiResponse.data.blockchainInfo.initialblockdownload
+                  ? 'Yes'
+                  : 'No'
+              }}</span>
+            </div>
+            <div class="flex justify-between">
               <span class="">Sync Progress</span>
               <span class=""
                 >{{
-                  (
-                    apiResponse.data.blockchainInfo.verificationprogress * 100
-                  ).toFixed(2)
+                  apiResponse.data.blockchainInfo.verificationprogress
                 }}%</span
               >
             </div>
