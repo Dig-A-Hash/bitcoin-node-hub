@@ -6,6 +6,7 @@ import {
   MempoolInfo,
   NetTotals,
 } from '~~/shared/types/bitcoinCore';
+import type { NodeInfo } from '~~/shared/types/nodeInfo';
 
 // Define the POST endpoint
 export default defineEventHandler(

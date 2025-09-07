@@ -9,7 +9,7 @@ import type {
 } from './bitcoinCore';
 
 // New NodeInfo type combining all requested RPCs
-interface NodeInfo {
+export interface NodeInfo {
   nodeIndex: number; // Index of the node in a multi-node setup.
   name: string; // Name of the node (e.g., derived from configuration).
   host: string; // Host address of the node.
