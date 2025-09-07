@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { PeerInfo } from '~~/shared/types/bitcoinCore';
 import { ApiResponse } from '~~/shared/types/apiResponse';
-import { sendErrorResponse } from '../utils/errors';
+import { sendErrorResponse } from '~~/server/utils/errors';
 
 export default defineEventHandler(
   async (event): Promise<ApiResponse<PeerInfo[]>> => {

@@ -27,7 +27,11 @@ const nodeProgress = computed(() => {
 });
 
 function navigateToPeers(index: number) {
-  router.push(`peers?i=${index}`);
+  router.push(`/peers?i=${index}`);
+}
+
+function navigateToNodeInfo(index: number) {
+  router.push(`/node-info?i=${index}`);
 }
 </script>
 <template>
@@ -61,7 +65,7 @@ function navigateToPeers(index: number) {
               class="rounded-none rounded-tr-lg h-12"
               color="secondary"
               variant="ghost"
-              to="/node-info"
+              @click="navigateToNodeInfo(dashboardNode.nodeIndex)"
             >
               <UIcon size="24" class="" name="solar:info-square-bold"></UIcon>
             </UButton>
@@ -164,7 +168,7 @@ function navigateToPeers(index: number) {
         <UButton
           @click="navigateToPeers(dashboardNode.nodeIndex)"
           color="secondary"
-          variant="subtle"
+          variant="solid"
           icon="solar:global-outline"
           >Details</UButton
         >
@@ -181,8 +185,8 @@ function navigateToPeers(index: number) {
         class=""
         size="lg"
         :ui="{
-          indicator: 'rounded-none bg-sky-600',
-          base: 'bg-blue-700  dark:border border-neutral-800',
+          indicator: 'rounded-none',
+          // base: 'bg-blue-700  dark:border border-neutral-800',
           status: 'light:text-slate-600 dark:text-slate-500',
         }"
       />
@@ -193,10 +197,12 @@ function navigateToPeers(index: number) {
           >
             <div class="cursor-default">
               <UBadge
+                color="secondary"
+                variant="subtle"
                 size="xl"
-                class="font-bold mr-2 px-4 bg-sky-600/50 border border-sky-600"
+                class="font-bold mr-2 px-4"
               >
-                <span class="text-neutral-100">
+                <span class="">
                   {{ dashboardNode.networkInfo.connections_in }}
                 </span>
               </UBadge>
@@ -211,10 +217,12 @@ function navigateToPeers(index: number) {
             <div class="cursor-default">
               <span class="">Out</span>
               <UBadge
+                color="neutral"
+                variant="subtle"
                 size="xl"
-                class="font-bold ml-2 px-4 bg-blue-700/50 border border-blue-700"
+                class="font-bold ml-2 px-4"
               >
-                <span class="text-neutral-100">{{
+                <span class="">{{
                   dashboardNode.networkInfo.connections_out
                 }}</span>
               </UBadge>

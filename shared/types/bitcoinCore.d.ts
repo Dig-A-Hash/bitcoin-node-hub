@@ -74,7 +74,7 @@ export interface MiningInfo {
   warnings: string[]; // Array of warning messages
 }
 
-interface BitcoinBlockHeader {
+export interface BitcoinBlockHeader {
   hash: string; // Unique hash of the block
   confirmations: number; // Number of confirmations for the block
   height: number; // Block height in the blockchain
@@ -95,7 +95,7 @@ interface BitcoinBlockHeader {
   tx: string[]; // Array of transaction IDs in the block
 }
 
-interface PeerInfo {
+export interface PeerInfo {
   id: number; // Unique identifier for the peer
   addr: string; // Remote address and port of the peer (e.g., "131.153.242.115:8333")
   addrbind: string; // Local address and port used to connect to the peer (e.g., "127.0.0.1:42658")
@@ -138,6 +138,90 @@ interface PeerInfo {
   session_id: string; // Unique session identifier for the connection
   misbehavior_score: number; // Score tracking peer misbehavior (0 for no issues)
 }
+
+export interface NetTotals {
+  // Total bytes received by the node from all peers since startup.
+  totalbytesrecv: number;
+  // Total bytes sent by the node to all peers since startup.
+  totalbytessent: number;
+  // Current time in milliseconds since the Unix epoch.
+  timemillis: number;
+  // Details about the node's upload bandwidth limit settings.
+  uploadtarget: UploadTarget;
+}
+
+export interface UploadTarget {
+  // Duration of the upload bandwidth tracking cycle in seconds.
+  timeframe: number;
+  // Maximum bytes allowed to send in the cycle (0 for unlimited).
+  target: number;
+  // Whether the upload limit has been reached in the current cycle.
+  target_reached: boolean;
+  // Whether the node serves historical block data to peers.
+  serve_historical_blocks: boolean;
+  // Bytes remaining before hitting the upload limit in the cycle.
+  bytes_left_in_cycle: number;
+  // Seconds remaining in the current upload cycle.
+  time_left_in_cycle: number;
+}
+
+export interface MemoryInfo {
+  // Details about the memory pool used by the node.
+  locked: LockedMemory;
+}
+
+export interface LockedMemory {
+  // Bytes currently in use by the memory pool.
+  used: number;
+  // Bytes available in the memory pool.
+  free: number;
+  // Total bytes allocated to the memory pool.
+  total: number;
+  // Bytes locked for use in the memory pool (matches total).
+  locked: number;
+  // Number of memory chunks currently in use.
+  chunks_used: number;
+  // Number of memory chunks available for use.
+  chunks_free: number;
+}
+
+export interface MempoolInfo {
+  // Whether the mempool is fully loaded and initialized.
+  loaded: boolean;
+  // Number of transactions currently in the mempool.
+  size: number;
+  // Total size of all mempool transactions in bytes.
+  bytes: number;
+  // Memory usage of the mempool in bytes.
+  usage: number;
+  // Total fees (in BTC) of all transactions in the mempool.
+  total_fee: number;
+  // Maximum size of the mempool in bytes.
+  maxmempool: number;
+  // Minimum fee rate (in BTC/kB) for a transaction to enter the mempool.
+  mempoolminfee: number;
+  // Minimum fee rate (in BTC/kB) for a transaction to be relayed to peers.
+  minrelaytxfee: number;
+  // Incremental fee rate (in BTC/kB) added for Replace-By-Fee (RBF) transactions.
+  incrementalrelayfee: number;
+  // Fee rate (in BTC/kB) below which outputs are considered dust.
+  dustrelayfee: number;
+  // Minimum fee rate (in BTC/kB) for dust outputs to be relayed.
+  dustrelayfeefloor: number;
+  // Whether dynamic dust fee adjustment is enabled ("on" or "off").
+  dustdynamic: string;
+  // Number of transactions in the mempool that have not been broadcast.
+  unbroadcastcount: number;
+  // Whether full Replace-By-Fee (RBF) is enabled for all transactions.
+  fullrbf: boolean;
+  // Policy for handling Replace-By-Fee transactions ("always", "never", or "optin").
+  rbf_policy: string;
+  // Policy for handling transactions with unconfirmed parents ("accept" or "reject").
+  truc_policy: string;
+}
+
+// Interface for getdifficulty (simple number return)
+export type Difficulty = number;
 
 export interface BitcoinNodeCredential {
   user: string;
