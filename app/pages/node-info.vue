@@ -3,11 +3,16 @@ import type { ApiResponse } from '~~/shared/types/apiResponse';
 import type { NodeInfo } from '~~/shared/types/nodeInfo';
 
 const apiResponse = ref<ApiResponse<NodeInfo>>();
+const nodeInfo = ref<NodeInfo>();
 const bitcoinStore = useBitcoin();
 const router = useRouter();
 const route = useRoute();
 const nodeIndex = parseInt(route.query.i ? route.query.i.toString() : '0');
 const dashboardNode = ref(bitcoinStore.dashboardNodes[nodeIndex]);
+const isLocalAddressesDrawerOpen = ref(false);
+const isLocalServicesDrawerOpen = ref(false);
+
+const textDataSize = 'text-2xl';
 
 // Format bytes to human-readable units
 const formatBytes = (bytes: number) => {
@@ -20,6 +25,10 @@ const formatBytes = (bytes: number) => {
   }
   return `${value.toFixed(2)} ${units[unitIndex]}`;
 };
+
+function navigateToPeers(index: number) {
+  router.push(`/peers?i=${index}`);
+}
 
 // Format timestamp to readable date
 const formatTimestamp = (millis: number) => new Date(millis).toLocaleString();
@@ -35,7 +44,7 @@ async function fetchNodeInfo(host: string) {
       apiResponse.value = response;
     }
   } catch (error) {
-    console.error('Error fetching metrics:', error);
+    console.error('Error fetching:', error);
   }
 }
 
@@ -54,35 +63,106 @@ onMounted(async () => {
       <!-- Node Overview -->
       <card-subtle class=" ">
         <template #header>
-          <div class="flex items-center justify-between p-4">
-            <h2 class="text-xl font-semibold">
-              {{ apiResponse.data.name || 'Node' }}
+          <div class="flex items-center justify-between p-2 px-4">
+            <h2 class="text-lg">
+              {{ apiResponse.data.name || 'Unnamed Node' }}
             </h2>
             <UBadge :color="apiResponse.data.error ? 'error' : 'success'">
               {{ apiResponse.data.error || 'Active' }}
             </UBadge>
           </div>
         </template>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4">
-          <div>
-            <p class="text-sm">Host</p>
-            <p class="text-lg">{{ apiResponse.data.host }}</p>
-          </div>
-          <div>
-            <p class="text-sm">Node Index</p>
-            <p class="text-lg">{{ apiResponse.data.nodeIndex }}</p>
-          </div>
-          <div>
-            <p class="text-sm">Chain</p>
-            <p class="text-lg">
-              {{ apiResponse.data.blockchainInfo.chain }}
-            </p>
-          </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2">
+          <card-tile>
+            <div class="p-4">
+              <p :class="textDataSize">{{ apiResponse.data.host }}</p>
+              <p class="text-gray-500">Host</p>
+            </div>
+          </card-tile>
+          <card-tile>
+            <div class="p-4">
+              <p class="text-gray-500">Node Index</p>
+              <p :class="textDataSize">{{ apiResponse.data.nodeIndex }}</p>
+            </div>
+          </card-tile>
+          <card-tile>
+            <div class="p-4">
+              <p :class="textDataSize">
+                {{ apiResponse.data.blockchainInfo.chain }}
+              </p>
+              <p class="text-gray-500">Chain</p>
+            </div>
+          </card-tile>
+          <card-tile class="col-span-2">
+            <div class="p-4">
+              <div class="text-xl">
+                {{ apiResponse.data.networkInfo.subversion }}
+                <UBadge color="neutral" variant="subtle">{{
+                  apiResponse.data.networkInfo.version
+                }}</UBadge>
+              </div>
+              <div class="text-sm"></div>
+              <div class="text-gray-500 mb-1">Version</div>
+            </div>
+          </card-tile>
         </div>
       </card-subtle>
 
-      <!-- Blockchain and Mempool Info -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 gap-4">
+        <card-subtle class="">
+          <template #header>
+            <div class="p-2 px-4">
+              <h3 class="text-lg font-medium">Network Info</h3>
+            </div>
+          </template>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2">
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ formatTimestamp(apiResponse.data.netTotals.timemillis) }}
+                </div>
+                <div class="text-gray-500">Last Updated</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ formatBytes(apiResponse.data.netTotals.totalbytessent) }}
+                </div>
+                <div class="text-gray-500">Bytes Sent</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ formatBytes(apiResponse.data.netTotals.totalbytesrecv) }}
+                </div>
+                <div class="text-gray-500">Bytes Received</div>
+              </div>
+            </card-tile>
+
+            <card-tile-button @click="navigateToPeers(nodeIndex)">
+              <div>
+                <UIcon name="solar:global-outline" size="22"></UIcon>
+              </div>
+              <div>Connection Map</div>
+            </card-tile-button>
+            <card-tile-button @click="navigateToPeers(nodeIndex)">
+              <div>
+                <UIcon name="material-symbols:in-home-mode" size="22"></UIcon>
+              </div>
+              <div>Local Addresses</div>
+            </card-tile-button>
+            <card-tile-button @click="navigateToPeers(nodeIndex)">
+              <div>
+                <UIcon name="material-symbols:bolt" size="22"></UIcon>
+              </div>
+              <div>Local Services</div>
+            </card-tile-button>
+          </div>
+        </card-subtle>
+
+        <!-- Blockchain Info -->
         <card-subtle class="">
           <template #header>
             <div class="p-4">
@@ -90,45 +170,64 @@ onMounted(async () => {
             </div>
           </template>
           <div class="p-4 space-y-3">
-            <div class="flex justify-between">
-              <span class="">Blocks</span>
-              <span class="">{{ apiResponse.data.blockchainInfo.blocks }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="">Difficulty</span>
-              <span class="">{{ apiResponse.data.difficulty }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="">Size on Disk</span>
-              <span class="">{{
-                formatBytes(apiResponse.data.blockchainInfo.size_on_disk)
-              }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="">Initial Block Download (IBD) Mode</span>
-              <span class="">{{
-                apiResponse.data.blockchainInfo.initialblockdownload
-                  ? 'Yes'
-                  : 'No'
-              }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="">Sync Progress</span>
-              <span class=""
-                >{{
-                  apiResponse.data.blockchainInfo.verificationprogress
-                }}%</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="">Pruned</span>
-              <span class="">{{
-                apiResponse.data.blockchainInfo.pruned ? 'Yes' : 'No'
-              }}</span>
-            </div>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ apiResponse.data.blockchainInfo.blocks }}
+                </div>
+                <div class="">Blocks</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ apiResponse.data.difficulty }}
+                </div>
+                <div class="">Difficulty</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{
+                    formatBytes(apiResponse.data.blockchainInfo.size_on_disk)
+                  }}
+                </div>
+                <div class="">Size on Disk</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{
+                    apiResponse.data.blockchainInfo.initialblockdownload
+                      ? 'Yes'
+                      : 'No'
+                  }}
+                </div>
+                <div class="">Initial Block Download (IBD) Mode</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ apiResponse.data.blockchainInfo.verificationprogress }}%
+                </div>
+                <div class="">Sync Progress</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ apiResponse.data.blockchainInfo.pruned ? 'Yes' : 'No' }}
+                </div>
+                <div class="">Pruned</div>
+              </div>
+            </card-tile>
           </div>
         </card-subtle>
 
+        <!-- Mempool -->
         <card-subtle class="">
           <template #header>
             <div class="p-4">
@@ -136,86 +235,54 @@ onMounted(async () => {
             </div>
           </template>
           <div class="p-4 space-y-3">
-            <div class="flex justify-between">
-              <span class="">Transactions</span>
-              <span class="">{{ apiResponse.data.mempoolInfo.size }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="">Size</span>
-              <span class="">{{
-                formatBytes(apiResponse.data.mempoolInfo.bytes)
-              }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="">Total Fee</span>
-              <span class=""
-                >{{
-                  apiResponse.data.mempoolInfo.total_fee.toFixed(8)
-                }}
-                BTC</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="">Min Fee Rate</span>
-              <span class=""
-                >{{
-                  apiResponse.data.mempoolInfo.mempoolminfee.toFixed(8)
-                }}
-                BTC/kB</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="">RBF Policy</span>
-              <span class="">{{
-                apiResponse.data.mempoolInfo.rbf_policy
-              }}</span>
-            </div>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ apiResponse.data.mempoolInfo.size }}
+                </div>
+                <div class="">Transactions</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ formatBytes(apiResponse.data.mempoolInfo.bytes) }}
+                </div>
+                <div class="">Size</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ apiResponse.data.mempoolInfo.total_fee.toFixed(8) }} BTC
+                </div>
+                <div class="">Total Fee</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ apiResponse.data.mempoolInfo.mempoolminfee.toFixed(8) }}
+                  BTC/kB
+                </div>
+                <div class="">Min Fee Rate</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ apiResponse.data.mempoolInfo.rbf_policy }}
+                </div>
+                <div class="">RBF Policy</div>
+              </div>
+            </card-tile>
           </div>
         </card-subtle>
       </div>
 
-      <!-- Network and Mining Info -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <card-subtle class="">
-          <template #header>
-            <div class="p-4">
-              <h3 class="text-lg font-medium">Network Info</h3>
-            </div>
-          </template>
-          <div class="p-4 space-y-3">
-            <div class="flex justify-between">
-              <span class="">Connections</span>
-              <span class="">{{
-                apiResponse.data.networkInfo.connections
-              }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="">Version</span>
-              <span class="">{{
-                apiResponse.data.networkInfo.subversion
-              }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="">Bytes Sent</span>
-              <span class="">{{
-                formatBytes(apiResponse.data.netTotals.totalbytessent)
-              }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="">Bytes Received</span>
-              <span class="">{{
-                formatBytes(apiResponse.data.netTotals.totalbytesrecv)
-              }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="">Last Updated</span>
-              <span class="">{{
-                formatTimestamp(apiResponse.data.netTotals.timemillis)
-              }}</span>
-            </div>
-          </div>
-        </card-subtle>
-
+      <!-- Network Info -->
+      <div class="grid grid-cols-1 gap-4">
+        <!-- Mining Info -->
         <card-subtle class="">
           <template #header>
             <div class="p-4">
@@ -223,31 +290,39 @@ onMounted(async () => {
             </div>
           </template>
           <div class="p-4 space-y-3">
-            <div class="flex justify-between">
-              <span class="">Network Hash Rate</span>
-              <span class=""
-                >{{
-                  formatBytes(apiResponse.data.miningInfo.networkhashps)
-                }}
-                H/s</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="">Difficulty</span>
-              <span class="">{{
-                apiResponse.data.miningInfo.difficulty.toFixed(2)
-              }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="">Pooled Transactions</span>
-              <span class="">{{ apiResponse.data.miningInfo.pooledtx }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="">Warnings</span>
-              <span class="">{{
-                apiResponse.data.miningInfo.warnings || 'None'
-              }}</span>
-            </div>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ formatBytes(apiResponse.data.miningInfo.networkhashps) }}
+                  H/s
+                </div>
+                <div class="">Network Hash Rate</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ apiResponse.data.miningInfo.difficulty.toFixed(2) }}
+                </div>
+                <div class="">Difficulty</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ apiResponse.data.miningInfo.pooledtx }}
+                </div>
+                <div class="">Pooled Transactions</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ apiResponse.data.miningInfo.warnings || 'None' }}
+                </div>
+                <div class="">Warnings</div>
+              </div>
+            </card-tile>
           </div>
         </card-subtle>
       </div>
@@ -260,36 +335,69 @@ onMounted(async () => {
           </div>
         </template>
         <div class="p-4 space-y-3">
-          <div class="flex justify-between">
-            <span class="">Used Memory</span>
-            <span class="">{{
-              formatBytes(apiResponse.data.memoryInfo.locked.used)
-            }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="">Free Memory</span>
-            <span class="">{{
-              formatBytes(apiResponse.data.memoryInfo.locked.free)
-            }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="">Total Memory</span>
-            <span class="">{{
-              formatBytes(apiResponse.data.memoryInfo.locked.total)
-            }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="">Chunks Used/Free</span>
-            <span class=""
-              >{{ apiResponse.data.memoryInfo.locked.chunks_used }} /
-              {{ apiResponse.data.memoryInfo.locked.chunks_free }}</span
-            >
-          </div>
+          <card-tile>
+            <div class="p-4">
+              <div :class="textDataSize">
+                {{ formatBytes(apiResponse.data.memoryInfo.locked.used) }}
+              </div>
+              <div class="">Used Memory</div>
+            </div>
+          </card-tile>
+          <card-tile>
+            <div class="p-4">
+              <div :class="textDataSize">
+                {{ formatBytes(apiResponse.data.memoryInfo.locked.free) }}
+              </div>
+              <div class="">Free Memory</div>
+            </div>
+          </card-tile>
+          <card-tile>
+            <div class="p-4">
+              <div :class="textDataSize">
+                {{ formatBytes(apiResponse.data.memoryInfo.locked.total) }}
+              </div>
+              <div class="">Total Memory</div>
+            </div>
+          </card-tile>
+          <card-tile>
+            <div class="p-4">
+              <div :class="textDataSize">
+                {{ apiResponse.data.memoryInfo.locked.chunks_used }} /
+                {{ apiResponse.data.memoryInfo.locked.chunks_free }}
+              </div>
+              <div class="">Chunks Used/Free</div>
+            </div>
+          </card-tile>
         </div>
       </card-subtle>
     </div>
+
     <div v-else class="text-center">
       <p>Loading node information or no data available...</p>
     </div>
   </UContainer>
+  <USlideover
+    v-model:open="isLocalAddressesDrawerOpen"
+    aria-describedby="undefined"
+    direction="right"
+    :overlay="false"
+    title="Peer Details"
+    :modal="false"
+    class="w-full max-w-md"
+    close-icon="solar:close-square-bold"
+  >
+    <template #body> Local Addresses </template>
+  </USlideover>
+  <USlideover
+    v-model:open="isLocalServicesDrawerOpen"
+    aria-describedby="undefined"
+    direction="right"
+    :overlay="false"
+    title="Peer Details"
+    :modal="false"
+    class="w-full max-w-md"
+    close-icon="solar:close-square-bold"
+  >
+    <template #body> Local Addresses </template>
+  </USlideover>
 </template>
