@@ -1,12 +1,18 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import type { DashboardNode } from '~~/shared/types/dashboard';
+
 const router = useRouter();
-const { dashboardNode } = defineProps<{
-  dashboardNode: DashboardNode;
+const { dashboardNode, nodeIndex } = defineProps<{
+  dashboardNode: DashboardNode | null;
+  nodeIndex: number;
 }>();
 const bytesInGB: number = 1073741824; // 1 GB = 2^30 bytes
 
 // Compute percentages for the single node, rounded to whole numbers
 const nodeProgress = computed(() => {
+  if (!dashboardNode) return { inPercent: 0, outPercent: 0 };
   const total =
     (dashboardNode.networkInfo?.connections_in || 0) +
     (dashboardNode.networkInfo?.connections_out || 0);
@@ -34,263 +40,220 @@ function navigateToNodeInfo(index: number) {
   router.push(`/node-info?i=${index}`);
 }
 </script>
+
 <template>
-  <card-subtle v-if="!dashboardNode.error" header-class="">
-    <template #header>
-      <div
-        class="flex items-center"
-        v-if="
-          dashboardNode.networkInfo &&
-          dashboardNode.networkInfo.localaddresses[0]
-        "
-      >
-        <div
-          class="border-r dark:border-slate-800 light:border-gray-200 bg-green-subtle"
-        >
-          <div class="rounded-none rounded-tl-lg px-4 h-12 flex items-center">
-            <div class="text-center">
-              <div class="flex items-center">
-                <UChip standalone inset class="mr-2" />
-                <div class="text-xs">Online</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="px-4 truncate w-full">
-          {{ dashboardNode.name }}
-        </div>
-        <div class="border-l dark:border-slate-800 light:border-gray-200">
-          <UTooltip text="All node details.">
-            <UButton
-              class="rounded-none rounded-tr-lg h-12"
-              color="secondary"
-              variant="ghost"
-              @click="navigateToNodeInfo(dashboardNode.nodeIndex)"
-            >
-              <UIcon size="24" class="" name="solar:info-square-bold"></UIcon>
-            </UButton>
-          </UTooltip>
-        </div>
-      </div>
-    </template>
-
-    <!-- Blockchain Info -->
-
-    <div class="p-4 pb-0">
-      <div class="flex justify-between items-center">
-        <h2 class="text-lg">Blockchain Info</h2>
-        <div class="flex">
-          <div class="text-sm">
-            ({{
-              dashboardNode.blockchainInfo.chain === 'main'
-                ? 'Mainnet'
-                : 'Testnet'
-            }})
-          </div>
-        </div>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-        <card-tile>
-          <div class="p-2 px-4">
-            <div class="text-2xl">
-              {{
-                dashboardNode.blockchainInfo.blocks.toLocaleString('en-US', {
-                  style: 'decimal',
-                })
-              }}
-            </div>
-            <div class="text-gray-500">Blocks</div>
-          </div>
-        </card-tile>
-        <card-tile>
-          <div class="p-2 px-4">
-            <div class="text-2xl">
-              {{
-                dashboardNode.blockchainInfo.headers.toLocaleString('en-US', {
-                  style: 'decimal',
-                })
-              }}
-            </div>
-            <div class="text-gray-500">Headers</div>
-          </div>
-        </card-tile>
-        <card-tile>
-          <div class="p-2 px-4">
-            <div class="text-2xl">
-              {{
-                (
-                  dashboardNode.blockchainInfo.size_on_disk / bytesInGB
-                ).toLocaleString('en-US', {
-                  style: 'decimal',
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })
-              }}
-              GB
-            </div>
-            <div class="text-gray-500">Size on Disk</div>
-          </div>
-        </card-tile>
-        <card-tile v-if="dashboardNode.blockchainInfo.initialblockdownload">
-          <div class="p-2 px-4">
-            <div class="flex justify-between">
-              <div class="text-2xl capitalize">
-                {{
-                  dashboardNode.blockchainInfo.verificationprogress.toFixed(2)
-                }}%
-              </div>
-              <UIcon
-                title="Initial Block Download (IBD) Mode"
-                name="material-symbols:refresh"
-                v-if="dashboardNode.blockchainInfo.initialblockdownload"
-                class="spinner ml-2"
-                size="32"
-              />
-            </div>
-            <div class="text-gray-500">Sync Progress</div>
-          </div>
-        </card-tile>
-        <card-tile v-else>
-          <div class="p-2 px-4">
-            <div class="text-3xl capitalize">
-              {{ dashboardNode.networkInfo.localaddresses[0]?.score }}
-            </div>
-            <div class="text-gray-500">Reliability Score</div>
-          </div>
-        </card-tile>
-      </div>
-      <div></div>
-    </div>
-
-    <divider class="my-4"></divider>
-
-    <!-- Peers -->
-
-    <div class="p-4 pb-2 pt-0">
-      <div class="text-lg mb-2">Peers</div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-        <card-tile>
-          <div class="p-2 px-4">
-            <div class="text-2xl">
-              {{ dashboardNode.networkInfo.connections }}
-            </div>
-            <div class="text-gray-500">Connections</div>
-          </div>
-        </card-tile>
-
-        <card-tile-button @click="navigateToPeers(dashboardNode.nodeIndex)">
-          <div>
-            <UIcon name="solar:global-outline" size="22"></UIcon>
-          </div>
-          <div>Connection Map</div>
-        </card-tile-button>
-      </div>
-    </div>
-
-    <!-- Progress Bar & Badges -->
-
-    <div v-if="nodeProgress.inPercent" class="px-4">
-      <div class="grid grid-cols-1 gap-2">
-        <card-tile>
-          <div class="p-2 px-4 flex justify-between">
-            <div>
-              <div class="text-2xl">
-                {{ dashboardNode.networkInfo.connections_in }}
-              </div>
-              <div class="text-gray-500">Incoming</div>
-            </div>
-
-            <div class="text-right">
-              <div class="text-2xl">
-                {{ dashboardNode.networkInfo.connections_out }}
-              </div>
-              <div class="text-gray-500">Outgoing</div>
-            </div>
-          </div>
-          <div class="p-4">
-            <UProgress
-              status
-              v-model="nodeProgress.inPercent"
-              color="secondary"
-              class=""
-              size="lg"
-              :ui="{
-                indicator: 'rounded-none',
-                // base: 'bg-blue-700  dark:border border-neutral-800',
-                status: 'light:text-slate-600 dark:text-slate-500',
-              }"
-            />
-          </div>
-        </card-tile>
-      </div>
-    </div>
-
-    <divider class="my-4"></divider>
-
-    <!-- Version Info -->
-
-    <div class="p-4 pt-0">
-      <div class="text-lg mb-1">Version</div>
-      <div class="space-x-2">
-        <UBadge color="neutral" variant="soft">
-          {{ dashboardNode.networkInfo.version }}
-        </UBadge>
-        <UBadge color="neutral" variant="soft">
-          {{ dashboardNode.networkInfo.subversion }}
-        </UBadge>
-      </div>
-    </div>
-  </card-subtle>
-  <card-subtle v-else header-class="">
+  <card-subtle header-class="">
     <template #header>
       <div class="flex items-center">
         <div
-          class="border-r dark:border-slate-800 light:border-gray-200 bg-red-subtle"
+          class="border-r dark:border-slate-800 light:border-gray-200"
+          :class="dashboardNode ? 'bg-green-subtle' : 'bg-yellow-subtle'"
         >
           <div class="rounded-none rounded-tl-lg px-4 h-12 flex items-center">
             <div class="text-center">
               <div class="flex items-center">
-                <UChip standalone inset class="mr-2" color="error" />
-                <div class="text-xs">Offline</div>
+                <UChip
+                  standalone
+                  inset
+                  class="mr-2"
+                  :color="dashboardNode ? 'success' : 'warning'"
+                />
+                <div class="text-xs">
+                  {{ dashboardNode ? 'Online' : 'Pending' }}
+                </div>
               </div>
             </div>
           </div>
         </div>
         <div class="px-4 truncate w-full">
-          {{ dashboardNode.host }}
+          {{ dashboardNode ? dashboardNode.name : `Node ${nodeIndex}` }}
         </div>
         <div class="border-l dark:border-slate-800 light:border-gray-200">
-          <UTooltip text="Edit this nodes name.">
+          <UTooltip :text="dashboardNode ? 'All node details' : 'Node pending'">
             <UButton
               class="rounded-none rounded-tr-lg h-12"
               color="secondary"
               variant="ghost"
+              :disabled="!dashboardNode"
+              @click="navigateToNodeInfo(nodeIndex)"
             >
-              <UIcon
-                size="24"
-                class=""
-                name="solar:clapperboard-edit-linear"
-              ></UIcon>
+              <UIcon size="24" name="solar:info-square-bold"></UIcon>
             </UButton>
           </UTooltip>
         </div>
       </div>
     </template>
-    <div class="p-4 pb-2 flex items-center justify-center">
-      <div class="text-center text-slate-500">
-        <UIcon
-          name="solar:confounded-square-broken"
-          size="64"
-          class="mt-10"
-        ></UIcon>
-        <UAlert
-          variant="soft"
-          color="neutral"
-          class="dark:text-slate-400 light:text-slate-500"
-          title="Connection Error"
-          :description="dashboardNode.error"
-        />
+
+    <!-- Node Loading -->
+    <div class="p-4 pb-2" v-if="!dashboardNode">
+      <div class="text-center text-slate-500 max-w-sm mx-auto my-24 px-4">
+        <div class="mb-3">
+          <UProgress color="warning"></UProgress>
+        </div>
+        <div>Fetching Node Info...</div>
       </div>
     </div>
+
+    <template v-else>
+      <!-- Blockchain Info -->
+      <div class="p-4 pb-0">
+        <div class="flex justify-between items-center">
+          <h2 class="text-lg">Blockchain Info</h2>
+          <div class="flex">
+            <div class="text-sm">
+              ({{
+                dashboardNode.blockchainInfo.chain === 'main'
+                  ? 'Mainnet'
+                  : 'Testnet'
+              }})
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+          <card-tile>
+            <div class="p-2 px-4">
+              <div class="text-2xl">
+                {{
+                  dashboardNode.blockchainInfo.blocks.toLocaleString('en-US', {
+                    style: 'decimal',
+                  })
+                }}
+              </div>
+              <div class="text-gray-500">Blocks</div>
+            </div>
+          </card-tile>
+          <card-tile>
+            <div class="p-2 px-4">
+              <div class="text-2xl">
+                {{
+                  dashboardNode.blockchainInfo.headers.toLocaleString('en-US', {
+                    style: 'decimal',
+                  })
+                }}
+              </div>
+              <div class="text-gray-500">Headers</div>
+            </div>
+          </card-tile>
+          <card-tile>
+            <div class="p-2 px-4">
+              <div class="text-2xl">
+                {{
+                  (
+                    dashboardNode.blockchainInfo.size_on_disk / bytesInGB
+                  ).toLocaleString('en-US', {
+                    style: 'decimal',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
+                }}
+                GB
+              </div>
+              <div class="text-gray-500">Size on Disk</div>
+            </div>
+          </card-tile>
+          <card-tile v-if="dashboardNode.blockchainInfo.initialblockdownload">
+            <div class="p-2 px-4">
+              <div class="flex justify-between">
+                <div class="text-2xl capitalize">
+                  {{
+                    dashboardNode.blockchainInfo.verificationprogress.toFixed(
+                      2
+                    )
+                  }}%
+                </div>
+                <UIcon
+                  title="Initial Block Download (IBD) Mode"
+                  name="material-symbols:refresh"
+                  class="spinner ml-2"
+                  size="32"
+                />
+              </div>
+              <div class="text-gray-500">Sync Progress</div>
+            </div>
+          </card-tile>
+          <card-tile v-else>
+            <div class="p-2 px-4">
+              <div class="text-3xl capitalize">
+                {{ dashboardNode.networkInfo.localaddresses[0]?.score }}
+              </div>
+              <div class="text-gray-500">Reliability Score</div>
+            </div>
+          </card-tile>
+        </div>
+      </div>
+
+      <divider class="my-4"></divider>
+
+      <!-- Peers -->
+      <div class="p-4 pb-2 pt-0">
+        <div class="text-lg mb-2">Peers</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+          <card-tile>
+            <div class="p-2 px-4">
+              <div class="text-2xl">
+                {{ dashboardNode.networkInfo.connections }}
+              </div>
+              <div class="text-gray-500">Connections</div>
+            </div>
+          </card-tile>
+          <card-tile-button @click="navigateToPeers(nodeIndex)">
+            <div>
+              <UIcon name="solar:global-outline" size="22"></UIcon>
+            </div>
+            <div>Connection Map</div>
+          </card-tile-button>
+        </div>
+      </div>
+
+      <!-- In/Out + Progress Bar -->
+      <div class="px-4">
+        <div class="grid grid-cols-1 gap-2">
+          <card-tile>
+            <div class="p-2 px-4 flex justify-between">
+              <div>
+                <div class="text-2xl">
+                  {{ dashboardNode.networkInfo.connections_in }}
+                </div>
+                <div class="text-gray-500">Incoming</div>
+              </div>
+              <div class="text-right">
+                <div class="text-2xl">
+                  {{ dashboardNode.networkInfo.connections_out }}
+                </div>
+                <div class="text-gray-500">Outgoing</div>
+              </div>
+            </div>
+            <div class="p-4 pt-0">
+              <UProgress
+                status
+                v-model="nodeProgress.inPercent"
+                color="secondary"
+                class=""
+                size="lg"
+                :ui="{
+                  indicator: 'rounded-none',
+                  status: 'light:text-slate-600 dark:text-slate-500',
+                }"
+              />
+            </div>
+          </card-tile>
+        </div>
+      </div>
+
+      <divider class="my-4"></divider>
+
+      <!-- Version Info -->
+      <div class="p-4 pt-0">
+        <div class="text-lg mb-1">Version</div>
+        <div class="space-x-2">
+          <UBadge color="neutral" variant="soft">
+            {{ dashboardNode.networkInfo.version }}
+          </UBadge>
+          <UBadge color="neutral" variant="soft">
+            {{ dashboardNode.networkInfo.subversion }}
+          </UBadge>
+        </div>
+      </div>
+    </template>
   </card-subtle>
 </template>

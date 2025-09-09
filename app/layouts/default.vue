@@ -2,7 +2,7 @@
   <div>
     <!-- Header -->
     <header
-      class="bg-elevated/50 border-b border-accented/50 flex justify-between items-center"
+      class="dark:bg-elevated/50 light:bg-elevated/90 border-b border-accented/50 flex justify-between items-center"
     >
       <div class="flex items-center">
         <UButton
@@ -16,7 +16,7 @@
         <UIcon
           size="32"
           name="bitcoin-icons:bitcoin-circle-filled"
-          class="dark:text-orange-400 light:text-amber-600 mr-1"
+          class="dark:text-orange-400 light:text-orange-700/80 mr-1"
         ></UIcon>
         <span class="text-lg font-semibold"> Bitcoin Node Hub</span>
       </div>
@@ -35,6 +35,7 @@
         <UNavigationMenu
           :items="navItems"
           orientation="vertical"
+          color="secondary"
           class="w-full"
         />
       </template>
@@ -58,6 +59,14 @@ const navItems = ref<NavigationMenuItem[]>([
     label: 'Dashboard',
     icon: 'material-symbols:dashboard',
     to: '/',
+    onSelect: () => {
+      isOpen.value = false; // Close the slideover
+    },
+  },
+  {
+    label: 'Settings',
+    icon: 'material-symbols:settings',
+    to: '/settings',
     onSelect: () => {
       isOpen.value = false; // Close the slideover
     },

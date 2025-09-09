@@ -131,7 +131,7 @@ async function fetchPeers() {
   isLoading.value = true;
   try {
     const response = await $fetch<ApiResponse<PeerInfo[]>>(
-      '/api/getPeerInfo?host=' + dashboardNode.value?.host
+      '/api/getPeerInfo?nodeIndex=' + nodeIndex
     );
 
     if (response.success && response.data && response.data.length > 0) {
@@ -434,11 +434,6 @@ function onSelect(row: TableRow<PeerInfo & { geo?: GeoIpResponse }>) {
 }
 
 onMounted(async () => {
-  if (bitcoinStore.dashboardNodes.length === 0) {
-    router.push('/');
-    return;
-  }
-
   calculateMapHeight();
   await fetchPeers();
   window.addEventListener('resize', calculateMapHeight);

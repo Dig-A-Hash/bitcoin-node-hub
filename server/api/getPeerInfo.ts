@@ -6,11 +6,11 @@ import { sendErrorResponse } from '~~/server/utils/errors';
 export default defineEventHandler(
   async (event): Promise<ApiResponse<PeerInfo[]>> => {
     try {
-      const { host } = z
-        .object({ host: z.string().min(7).max(15) })
+      const { nodeIndex } = z
+        .object({ nodeIndex: z.string() })
         .parse(getQuery(event));
-      const bitcoinNodeCredentials = getBitcoinNodeCredentials(host as string);
-      const rpc = createBitcoinRpc(bitcoinNodeCredentials[0]);
+      const bitcoinNodeCredentials = getBitcoinNodeCredentials();
+      const rpc = createBitcoinRpc(bitcoinNodeCredentials[parseInt(nodeIndex)]);
 
       const response = await rpc.post('', {
         jsonrpc: '1.0',

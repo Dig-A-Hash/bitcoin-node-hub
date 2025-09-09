@@ -13,13 +13,13 @@ export default defineEventHandler(
   async (event): Promise<ApiResponse<NodeInfo>> => {
     try {
       // Parse the request body for the host (POST request)
-      const { host } = z
-        .object({ host: z.string().min(7).max(15) })
+      const { nodeIndex } = z
+        .object({ nodeIndex: z.number().min(0).max(32) })
         .parse(await readBody(event));
 
       // Get Bitcoin node credentials for the specified host
-      const bitcoinNodeCredentials = getBitcoinNodeCredentials(host as string);
-      const rpc = createBitcoinRpc(bitcoinNodeCredentials[0]);
+      const bitcoinNodeCredentials = getBitcoinNodeCredentials();
+      const rpc = createBitcoinRpc(bitcoinNodeCredentials[nodeIndex]);
 
       // Define all RPC calls to run concurrently
       const rpcCalls = [
@@ -80,9 +80,9 @@ export default defineEventHandler(
 
       // Construct the NodeInfo response
       const nodeInfo: NodeInfo = {
-        nodeIndex: 0, // Placeholder; update based on your node tracking logic
-        name: bitcoinNodeCredentials[0].name || host, // Use credential name or host
-        host,
+        nodeIndex,
+        name: bitcoinNodeCredentials[0].name || bitcoinNodeCredentials[0].host,
+        host: bitcoinNodeCredentials[0].host,
         blockchainInfo: blockchainResponse.data.result as BlockchainInfo,
         networkInfo: networkResponse.data.result as NetworkInfo,
         mempoolInfo: mempoolResponse.data.result as MempoolInfo,

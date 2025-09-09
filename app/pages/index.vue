@@ -1,75 +1,91 @@
 <script setup lang="ts">
 import type { ApiResponse } from '~~/shared/types/apiResponse';
-import { type DashboardNode } from '~~/shared/types/dashboard';
+import type { DashboardNode } from '~~/shared/types/dashboard';
 
 const toast = useToast();
-const apiResponse = ref<ApiResponse<DashboardNode[]>>();
+const apiResponse = ref<(DashboardNode | null)[]>([]);
 const bitcoinStore = useBitcoin();
+const isLoading = ref(false);
 
 // Fetch data
 async function fetchDashboard() {
+  if (!apiResponse.value) {
+    apiResponse.value = new Array(bitcoinStore.nodeCount).fill(null); // Pre-allocate array
+  }
+
+  isLoading.value = true;
+
+  Array.from({ length: bitcoinStore.nodeCount }, (_, i) => {
+    (async () => {
+      try {
+        console.log(`Starting fetch for node ${i}:`, Date.now()); // Debug concurrency
+        const response = await fetch('/api/getDashboard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nodeIndex: i }),
+        });
+        const { data } = (await response.json()) as ApiResponse<DashboardNode>;
+        apiResponse.value[i] = data || null; // Set data or null on failure
+        apiResponse.value = [...apiResponse.value]; // Trigger reactivity
+      } catch (error) {
+        console.error(`Error fetching node ${i}:`, error);
+        apiResponse.value[i] = null; // Explicitly set null on error
+        apiResponse.value = [...apiResponse.value];
+      } finally {
+        // Check if all requests are done to update isLoading
+        if (apiResponse.value.every((node) => node !== null)) {
+          isLoading.value = false;
+        }
+      }
+    })();
+  });
+}
+
+// fetchAndCache without debounce (as requested)
+async function fetchAndCache() {
   try {
-    const response = await $fetch<ApiResponse<DashboardNode[]>>(
-      '/api/getDashboard'
-    );
-    if (response.success && response.data && response.data.length > 0) {
-      apiResponse.value = response;
+    await fetchDashboard();
+    if (apiResponse.value) {
+      bitcoinStore.dashboardNodes = [...apiResponse.value];
     }
   } catch (error) {
-    console.error('Error fetching metrics:', error);
+    console.error('Error in fetchAndCache:', error);
+    isLoading.value = false;
   }
 }
 
-// Copy address
-const copyAddress = async (address: string) => {
-  try {
-    await navigator.clipboard.writeText(address);
-    toast.add({
-      title: 'Success',
-      description: 'Address copied to clipboard!',
-      color: 'primary',
-    });
-  } catch (error) {
-    toast.add({
-      title: 'Error',
-      description: 'Failed to copy address',
-      color: 'error',
-    });
-    console.error('Error copying to clipboard:', error);
-  }
-};
+// Watch nodeCount
+watch(
+  () => bitcoinStore.nodeCount,
+  async () => {
+    await fetchAndCache();
+  },
+  { immediate: false }
+);
 
-async function fetchAndCache() {
-  await fetchDashboard();
+const intervalRef = ref<NodeJS.Timeout | null>(null);
 
-  // Save dashboard data to the bitcoinStore.
-  if (apiResponse.value) {
-    bitcoinStore.dashboardNodes = apiResponse.value.data
-      ? apiResponse.value.data
-      : [];
-  }
-}
-const intervalRef = ref<NodeJS.Timeout | number | null>(null);
-
-onMounted(async () => {
-  // Run immediately on mount
-  await fetchAndCache();
-  // Set up interval to run every 60 seconds
+onMounted(() => {
+  fetchAndCache();
   intervalRef.value = setInterval(fetchAndCache, 60000);
 });
 
 onUnmounted(() => {
-  if (intervalRef.value !== null) {
-    clearInterval(intervalRef.value);
-  }
+  if (intervalRef.value) clearInterval(intervalRef.value);
 });
 </script>
 
 <template>
   <UContainer class="mt-4">
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <template v-for="(node, index) in apiResponse?.data" :key="index">
-        <card-dash :dashboard-node="node"></card-dash>
+    <div
+      v-if="isLoading && !apiResponse.some((node) => node !== null)"
+      class="text-center"
+    >
+      Loading...
+    </div>
+    <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <template v-for="(node, index) in apiResponse" :key="index">
+        <card-dash :dashboard-node="node" :node-index="index"></card-dash>
       </template>
     </div>
   </UContainer>
