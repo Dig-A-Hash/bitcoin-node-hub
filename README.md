@@ -2,13 +2,20 @@
 
 Bitcoin Node Hub is used to monitor and view information about multiple Bitcoin nodes. This is particularly useful for managing low-power, headless nodes that lack a dedicated monitor. Key features include real-time blockchain info, connection details, and more.
 
-### Dark Mode
+## Dark Mode
 
-![Bitcoin Node Hub](https://i.imgur.com/zSm1h5L.png)
+The dashboard shows important metrics for each node.
+![Bitcoin Node Hub](https://i.imgur.com/AdkTv08.png)
 
-### Light Mode
+## Light Mode
 
-![Bitcoin Node Hub](https://i.imgur.com/RGYGHTY.png)
+The same dashboard in light mode.
+![Bitcoin Node Hub](https://i.imgur.com/PGICM9n.png)
+
+## Peer Mapping
+
+Zoom in, navigate, and map peer geographic locations.
+![Bitcoin Node Hub](https://i.imgur.com/AMYf2LE.png)
 
 ## Dependencies
 
@@ -16,14 +23,24 @@ This app requires [Node.js](https://nodejs.org/en), the latest version is always
 
 ## Installation
 
-Install using the following command from the project root.
+First, pre-load the [GeoLite2](https://github.com/GitSquared/node-geolite2-redist) IP Address Geographic Location Dta using the following command from the project root.
+
+`npm run preload-geolite2`
+
+Create a production build in the .output directory.
 
 `npm run build`
 
-Run the production build.
+Run the production build, by setting the desired port. NUXT_BITCOIN_NODE_CREDENTIALS must be setup with credentials for each node to be monitored. Setup both prior to running node `.output/server/index.mjs`.
 
-`PORT=3500 node .output/server/index.mjs`
+## Run Production Build
 
-## Dev Notes
+`PORT=3600 export NUXT_BITCOIN_NODE_CREDENTIALS='[{"name":"Node-Runner-Exp","user":"bitcoinrpc","password":"your-password","host":"192.168.1.420","port":"8332"},{"name":"Node-Runner","user":"bitcoinrpc","password":"your-password","host":"192.168.1.69","port":"8332"}]' node .output/server/index.mjs`
+
+## Developer Notes
+
+Start the dev server in a new terminal window using...
+
+`npm run dev`
 
 VSCode sandboxing will not allow Node.js to call IPs that are on the local network. Either use start vsCode with no sandboxing, or start the app outside of VSCode in a terminal window.
