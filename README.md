@@ -17,6 +17,14 @@ The same dashboard in light mode.
 Zoom in, navigate, and map peer geographic locations.
 ![Bitcoin Node Hub](https://i.imgur.com/AMYf2LE.png)
 
+## Disclaimer (Beta Testing)
+
+We strongly recommend using this application only in controlled testing environments with test nodes or by advanced web administrators with expertise in network security.
+
+Important: Connecting to Bitcoin Nodes over the internet is not recommended at this time due to unresolved security vulnerabilities. The application is currently being tested exclusively in highly controlled local network environments with test nodes.
+
+Use this software at your own risk. The developers and contributors are not liable for any damages, losses, or security issues arising from its use. Always exercise caution and thoroughly review the code before deployment.
+
 ## Dependencies
 
 This app requires [Node.js](https://nodejs.org/en), the latest version is always recommended. This app requires at least 1 Bitcoin Node. This app is only tested with [Bitcoin Knots](https://bitcoinknots.org/) because we do not want to see spam on the Bitcoin Network, but any Bitcoin Node should work.
