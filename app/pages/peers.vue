@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue';
 import type { TableColumn, TableRow } from '@nuxt/ui';
-import { type ApiResponse } from '~~/shared/types/apiResponse';
-import type { PeerInfo } from '~~/shared/types/bitcoinCore';
-import type { GeoIpResponse } from '~~/shared/types/geoip';
+import type { ApiResponse } from '../../shared/types/apiResponse';
+import type { PeerInfo } from '../../shared/types/bitcoinCore';
+import type { GeoIpResponse } from '../../shared/types/geoip';
 import { Map, View, Overlay } from 'ol';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
