@@ -4,5 +4,6 @@ export interface DashboardNode {
   host: string;
   blockchainInfo: BlockchainInfo;
   networkInfo: NetworkInfo;
+  indexInfo: IndexInfo;
   error?: string;
 }

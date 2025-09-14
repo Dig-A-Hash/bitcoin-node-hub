@@ -2,12 +2,10 @@ import { z } from 'zod';
 import { ApiResponse } from '~~/shared/types/apiResponse';
 import { sendErrorResponse } from '~~/server/utils/errors';
 import {
-  Difficulty,
-  MempoolInfo,
-  NetTotals,
+  BlockchainInfo,
+  IndexInfo,
+  NetworkInfo,
 } from '~~/shared/types/bitcoinCore';
-import type { NodeInfo } from '~~/shared/types/nodeInfo';
-import { DashboardNode } from '~~/shared/types/dashboard';
 
 // Define the POST endpoint
 export default defineEventHandler(
@@ -40,22 +38,30 @@ export default defineEventHandler(
             params: [],
           })
           .then((res) => res.data.result),
+        rpc
+          .post('', {
+            jsonrpc: '1.0',
+            id: 'nuxt-rpc',
+            method: 'getindexinfo',
+            params: [],
+          })
+          .then((res) => res.data.result),
       ];
 
       // Execute all RPC calls concurrently
-      const [networkingInfoResponse, blockchainResponse] = await Promise.all(
-        rpcCalls
-      );
+      const [networkingInfoResponse, blockchainResponse, indexInfoResponse] =
+        await Promise.all(rpcCalls);
 
       // Construct the NodeInfo response
       const nodeInfo: DashboardNode = {
-        nodeIndex: 0, // Placeholder; update based on your node tracking logic
+        nodeIndex: nodeIndex,
         name:
           bitcoinNodeCredentials[nodeIndex].name ||
-          bitcoinNodeCredentials[nodeIndex].host, // Use credential name or host
+          bitcoinNodeCredentials[nodeIndex].host,
         host: bitcoinNodeCredentials[nodeIndex].host,
         blockchainInfo: blockchainResponse as BlockchainInfo,
         networkInfo: networkingInfoResponse as NetworkInfo,
+        indexInfo: indexInfoResponse as IndexInfo,
       };
 
       return {
