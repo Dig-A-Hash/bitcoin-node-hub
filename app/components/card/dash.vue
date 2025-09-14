@@ -32,6 +32,10 @@ const nodeProgress = computed(() => {
   };
 });
 
+function getSyncProgress(value: number) {
+  return value * 100;
+}
+
 function navigateToPeers(index: number) {
   router.push(`/peers?i=${index}`);
 }
@@ -68,7 +72,20 @@ function navigateToNodeInfo(index: number) {
         <div class="px-4 truncate w-full">
           {{ dashboardNode ? dashboardNode.name : `Node ${nodeIndex}` }}
         </div>
-        <div class="border-l dark:border-slate-800 light:border-gray-200">
+        <div class="border-l dark:border-slate-800 light:border-gray-200 flex">
+          <UTooltip
+            v-if="dashboardNode?.indexInfo.txindex"
+            :text="dashboardNode ? 'Search Transactions' : 'Node pending'"
+          >
+            <UButton
+              class="rounded-none h-12"
+              variant="ghost"
+              color="secondary"
+              @click="navigateToNodeInfo(nodeIndex)"
+            >
+              <UIcon size="24" name="material-symbols:search"></UIcon>
+            </UButton>
+          </UTooltip>
           <UTooltip :text="dashboardNode ? 'All node details' : 'Node pending'">
             <UButton
               class="rounded-none rounded-tr-lg h-12"
@@ -99,15 +116,11 @@ function navigateToNodeInfo(index: number) {
       <div class="p-4 pb-0">
         <div class="flex justify-between items-center">
           <h2 class="text-lg">Blockchain Info</h2>
-          <div class="flex">
-            <div class="text-sm">
-              ({{
-                dashboardNode.blockchainInfo.chain === 'main'
-                  ? 'Mainnet'
-                  : 'Testnet'
-              }})
-            </div>
-          </div>
+          <UBadge color="neutral" variant="soft">{{
+            dashboardNode.blockchainInfo.chain === 'main'
+              ? 'Mainnet'
+              : 'Testnet'
+          }}</UBadge>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
           <card-tile>
@@ -156,8 +169,12 @@ function navigateToNodeInfo(index: number) {
               <div class="flex justify-between">
                 <div class="text-2xl capitalize">
                   {{
-                    dashboardNode.blockchainInfo.verificationprogress.toFixed(
-                      2
+                    getSyncProgress(
+                      parseFloat(
+                        dashboardNode.blockchainInfo.verificationprogress.toFixed(
+                          2
+                        )
+                      )
                     )
                   }}%
                 </div>

@@ -12,7 +12,6 @@ export default defineNuxtConfig({
   },
   nitro: {
     logLevel: 'debug',
-    timing: true,
   },
   imports: {
     dirs: ['shared/types'], // Ensure types are scanned
