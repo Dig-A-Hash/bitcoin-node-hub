@@ -2,7 +2,6 @@
 import type { ApiResponse } from '../../shared/types/apiResponse';
 import type { DashboardNode } from '../../shared/types/dashboard';
 
-const toast = useToast();
 const apiResponse = ref<(DashboardNode | null)[]>([]);
 const bitcoinStore = useBitcoin();
 const isLoading = ref(false);
@@ -18,7 +17,7 @@ async function fetchDashboard() {
   Array.from({ length: bitcoinStore.nodeCount }, (_, i) => {
     (async () => {
       try {
-        console.log(`Starting fetch for node ${i}:`, Date.now()); // Debug concurrency
+        // console.log(`Starting fetch for node ${i}:`, Date.now()); // Debug concurrency
         const response = await fetch('/api/getDashboard', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
