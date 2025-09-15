@@ -19,7 +19,8 @@ const hasHeader = computed(() => !!slots.header);
     variant="subtle"
     class=""
     :ui="{
-      header: `p-0 px-0 sm:px-0 m-0 ${headerClass}`,
+      root: ' light:ring-slate-500 dark:ring-slate-700',
+      header: `p-0 px-0 sm:px-0 m-0 light:border-slate-500 dark:border-slate-700 ${headerClass}`,
       body: `p-0 sm:p-0  rounded-b-lg rounded-t-none ${
         hasFooter ? 'rounded-t-lg' : ''
       }`,

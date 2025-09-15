@@ -50,7 +50,7 @@ function navigateToNodeInfo(index: number) {
     <template #header>
       <div class="flex items-center">
         <div
-          class="border-r dark:border-slate-800 light:border-gray-200"
+          class="border-r dark:border-slate-800 light:border-slate-500"
           :class="dashboardNode ? 'bg-green-subtle' : 'bg-yellow-subtle'"
         >
           <div class="rounded-none rounded-tl-lg px-4 h-12 flex items-center">
@@ -72,7 +72,7 @@ function navigateToNodeInfo(index: number) {
         <div class="px-4 truncate w-full">
           {{ dashboardNode ? dashboardNode.name : `Node ${nodeIndex}` }}
         </div>
-        <div class="border-l dark:border-slate-800 light:border-gray-200 flex">
+        <div class="border-l dark:border-slate-800 light:border-slate-500 flex">
           <UTooltip
             v-if="dashboardNode?.indexInfo.txindex"
             :text="dashboardNode ? 'Search Transactions' : 'Node pending'"
@@ -94,7 +94,7 @@ function navigateToNodeInfo(index: number) {
               :disabled="!dashboardNode"
               @click="navigateToNodeInfo(nodeIndex)"
             >
-              <UIcon size="24" name="solar:info-square-bold"></UIcon>
+              <UIcon size="24" name="material-symbols:more-vert"></UIcon>
             </UButton>
           </UTooltip>
         </div>
@@ -116,7 +116,7 @@ function navigateToNodeInfo(index: number) {
       <div class="p-4 pb-0">
         <div class="flex justify-between items-center">
           <h2 class="text-lg">Blockchain Info</h2>
-          <UBadge color="neutral" variant="soft">{{
+          <UBadge color="neutral" variant="subtle">{{
             dashboardNode.blockchainInfo.chain === 'main'
               ? 'Mainnet'
               : 'Testnet'
@@ -190,8 +190,15 @@ function navigateToNodeInfo(index: number) {
           </card-tile>
           <card-tile v-else>
             <div class="p-2 px-4">
-              <div class="text-3xl capitalize">
-                {{ dashboardNode.networkInfo.localaddresses[0]?.score }}
+              <div class="text-2xl capitalize">
+                {{
+                  dashboardNode.networkInfo.localaddresses[0]?.score.toLocaleString(
+                    'en-US',
+                    {
+                      style: 'decimal',
+                    }
+                  )
+                }}
               </div>
               <div class="text-gray-500">Reliability Score</div>
             </div>
@@ -263,10 +270,10 @@ function navigateToNodeInfo(index: number) {
       <div class="p-4 pt-0">
         <div class="text-lg mb-1">Version</div>
         <div class="space-x-2">
-          <UBadge color="neutral" variant="soft">
+          <UBadge color="neutral" variant="subtle">
             {{ dashboardNode.networkInfo.version }}
           </UBadge>
-          <UBadge color="neutral" variant="soft">
+          <UBadge color="neutral" variant="subtle">
             {{ dashboardNode.networkInfo.subversion }}
           </UBadge>
         </div>

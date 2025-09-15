@@ -17,7 +17,7 @@ const hasHeader = computed(() => !!slots.header);
   <UCard
     :class="props.cardClass"
     :ui="{
-      root: 'rounded-lg overflow-hidden ring-1 light:ring-gray-400 dark:ring-slate-800 light:bg-gray-100',
+      root: 'rounded-lg overflow-hidden ring-1 light:ring-gray-400 dark:ring-slate-700 light:bg-gray-100',
       header: `p-0 sm:px-2 ${headerClass}`,
       body: `p-0 sm:p-0   rounded-t-none ${
         hasFooter ? 'rounded-t-lg' : 'rounded-b-lg'

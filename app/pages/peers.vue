@@ -447,7 +447,7 @@ onUnmounted(() => {
 <template>
   <div class="mt-4 mx-4">
     <h1 class="text-xl mb-2 text-white">
-      {{ dashboardNode?.name }} Connection Explorer
+      {{ dashboardNode?.name }} Peer Connection Map
     </h1>
 
     <div class="flex space-x-4 mt-4">
