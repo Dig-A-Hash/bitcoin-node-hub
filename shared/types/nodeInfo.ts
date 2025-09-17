@@ -6,6 +6,7 @@ import type {
   NetTotals,
   MemoryInfo,
   Difficulty,
+  IndexInfo,
 } from './bitcoinCore';
 
 // New NodeInfo type combining all requested RPCs
@@ -20,5 +21,6 @@ export interface NodeInfo {
   netTotals: NetTotals; // Data from getnettotals RPC.
   memoryInfo: MemoryInfo; // Data from getmemoryinfo RPC.
   difficulty: Difficulty; // Data from getdifficulty RPC.
+  indexInfo: IndexInfo;
   error?: string; // Optional error message if any RPC call fails.
 }

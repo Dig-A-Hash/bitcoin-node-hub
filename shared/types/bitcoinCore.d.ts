@@ -262,6 +262,25 @@ export interface IndexInfo {
 // Interface for getdifficulty (simple number return)
 export type Difficulty = number;
 
+export interface Transaction {
+  txid: string;
+  fee: number;
+  vsize: number; // Add this
+  feePerVbyte: number;
+}
+
+export interface Block {
+  hash: string;
+  height: number;
+}
+
+// Response type for the visualizer data
+export interface VisualizerData {
+  transactions: Transaction[];
+  blocks: Block[];
+  totalTxCount: number;
+}
+
 export interface BitcoinNodeCredential {
   user: string;
   password: string;

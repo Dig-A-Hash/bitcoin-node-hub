@@ -65,6 +65,14 @@ export default defineEventHandler(
           method: 'getdifficulty',
           params: [],
         }),
+        rpc
+          .post('', {
+            jsonrpc: '1.0',
+            id: 'nuxt-rpc',
+            method: 'getindexinfo',
+            params: [],
+          })
+          .then((res) => res.data.result),
       ];
 
       // Execute all RPC calls concurrently
@@ -76,6 +84,7 @@ export default defineEventHandler(
         netTotalsResponse,
         memoryResponse,
         difficultyResponse,
+        indexInfoResponse,
       ] = await Promise.all(rpcCalls);
 
       // Construct the NodeInfo response
@@ -90,6 +99,7 @@ export default defineEventHandler(
         netTotals: netTotalsResponse.data.result as NetTotals,
         memoryInfo: memoryResponse.data.result as MemoryInfo,
         difficulty: difficultyResponse.data.result as Difficulty,
+        indexInfo: indexInfoResponse as IndexInfo,
       };
 
       return {
