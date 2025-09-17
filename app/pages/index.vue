@@ -33,6 +33,9 @@ async function fetchDashboard() {
       } finally {
         // Check if all requests are done to update isLoading
         if (apiResponse.value.every((node) => node !== null)) {
+          if (apiResponse.value) {
+            bitcoinStore.dashboardNodes = [...apiResponse.value];
+          }
           isLoading.value = false;
         }
       }
@@ -40,13 +43,9 @@ async function fetchDashboard() {
   });
 }
 
-// fetchAndCache without debounce (as requested)
 async function fetchAndCache() {
   try {
     await fetchDashboard();
-    if (apiResponse.value) {
-      bitcoinStore.dashboardNodes = [...apiResponse.value];
-    }
   } catch (error) {
     console.error('Error in fetchAndCache:', error);
     isLoading.value = false;

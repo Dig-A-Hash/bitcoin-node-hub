@@ -135,7 +135,20 @@ function navigateToNodeInfo(index: number) {
               <div class="text-gray-500">Blocks</div>
             </div>
           </card-tile>
-          <card-tile>
+          <card-tile v-if="dashboardNode.blockchainInfo.initialblockdownload">
+            <div class="p-2 px-4">
+              <div class="text-2xl">
+                {{
+                  dashboardNode.blockchainInfo.headers.toLocaleString('en-US', {
+                    style: 'decimal',
+                  })
+                }}
+              </div>
+              <div class="text-gray-500">Headers</div>
+            </div>
+          </card-tile>
+          <card-tile v-else>
+            <!-- TODO: change this to Bytes Downloaded from nuxt-rpc-nettotals-->
             <div class="p-2 px-4">
               <div class="text-2xl">
                 {{
@@ -230,7 +243,7 @@ function navigateToNodeInfo(index: number) {
       </div>
 
       <!-- In/Out + Progress Bar -->
-      <div class="px-4">
+      <div class="px-4 pb-4">
         <div class="grid grid-cols-1 gap-2">
           <card-tile>
             <div class="p-2 px-4 flex justify-between">
@@ -261,21 +274,6 @@ function navigateToNodeInfo(index: number) {
               />
             </div>
           </card-tile>
-        </div>
-      </div>
-
-      <divider class="my-4"></divider>
-
-      <!-- Version Info -->
-      <div class="p-4 pt-0">
-        <div class="text-lg mb-1">Version</div>
-        <div class="space-x-2">
-          <UBadge color="neutral" variant="subtle">
-            {{ dashboardNode.networkInfo.version }}
-          </UBadge>
-          <UBadge color="neutral" variant="subtle">
-            {{ dashboardNode.networkInfo.subversion }}
-          </UBadge>
         </div>
       </div>
     </template>
