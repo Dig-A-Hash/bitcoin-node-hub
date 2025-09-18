@@ -109,16 +109,8 @@ onMounted(async () => {
             </div>
           </div>
         </div>
-        <div
-          class="grid grid-cols-[minmax(0,450px)_1fr] gap-2 px-2 min-w-0"
-          v-if="nodeInfo.indexInfo.txindex"
-        >
-          <card-tile class="w-full">
-            <block-visualizer></block-visualizer>
-          </card-tile>
-          <div class="border-0 border-white min-w-0">
-            <card-tile class="w-full block"> test </card-tile>
-          </div>
+        <div class="" v-if="nodeInfo.indexInfo.txindex">
+          <block-visualizer-html></block-visualizer-html>
         </div>
       </card-subtle>
 

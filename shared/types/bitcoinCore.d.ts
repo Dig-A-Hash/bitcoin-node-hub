@@ -220,36 +220,36 @@ export interface MempoolInfo {
   truc_policy: string;
 }
 
-export interface Transaction {
-  txid: string;
-  hash: string;
-  version: number;
-  size: number;
-  vsize: number;
-  weight: number;
-  locktime: number;
-  vin: Array<{
-    txid?: string;
-    vout?: number;
-    scriptSig?: { asm: string; hex: string };
-    sequence: number;
-  }>;
-  vout: Array<{
-    value: number;
-    n: number;
-    scriptPubKey: {
-      asm: string;
-      hex: string;
-      type: string;
-      addresses?: string[];
-    };
-  }>;
-  hex: string;
-  blockhash?: string;
-  confirmations?: number;
-  time?: number;
-  blocktime?: number;
-}
+// export interface Transaction {
+//   txid: string;
+//   hash: string;
+//   version: number;
+//   size: number;
+//   vsize: number;
+//   weight: number;
+//   locktime: number;
+//   vin: Array<{
+//     txid?: string;
+//     vout?: number;
+//     scriptSig?: { asm: string; hex: string };
+//     sequence: number;
+//   }>;
+//   vout: Array<{
+//     value: number;
+//     n: number;
+//     scriptPubKey: {
+//       asm: string;
+//       hex: string;
+//       type: string;
+//       addresses?: string[];
+//     };
+//   }>;
+//   hex: string;
+//   blockhash?: string;
+//   confirmations?: number;
+//   time?: number;
+//   blocktime?: number;
+// }
 
 // Define the IndexInfo type for getindexinfo response
 export interface IndexInfo {
@@ -267,6 +267,7 @@ export interface Transaction {
   fee: number;
   vsize: number; // Add this
   feePerVbyte: number;
+  time: number; // Unix timestamp
 }
 
 export interface Block {
@@ -275,10 +276,29 @@ export interface Block {
 }
 
 // Response type for the visualizer data
+// export interface VisualizerData {
+//   transactions: Transaction[];
+//   blocks: Block[];
+//   totalTxCount: number;
+// }
+
+export interface LowPriorityCategory {
+  count: number;
+  totalVsize: number;
+  avgFeePerVbyte: number;
+  exampleTxid?: string;
+}
+
 export interface VisualizerData {
   transactions: Transaction[];
   blocks: Block[];
   totalTxCount: number;
+  lowPriorityCategories: {
+    lowFee: LowPriorityCategory;
+    dust: LowPriorityCategory;
+    ordinals: LowPriorityCategory;
+    anomalous: LowPriorityCategory;
+  };
 }
 
 export interface BitcoinNodeCredential {
