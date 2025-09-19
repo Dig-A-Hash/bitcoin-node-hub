@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type ApiResponse } from '~~/shared/types/apiResponse';
+import type { ApiResponse } from '../../shared/types/apiResponse';
 
 const { selectedPeer, nodeIndex } = defineProps<{
   selectedPeer: PeerInfo & { geo?: GeoIpResponse };
