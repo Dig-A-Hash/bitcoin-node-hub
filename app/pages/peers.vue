@@ -18,8 +18,6 @@ import Fill from 'ol/style/Fill';
 import Stroke from 'ol/style/Stroke';
 import { UBadge, UButton } from '#components';
 
-const router = useRouter();
-
 // Configurable Items
 const INBOUND_COLOR = '#f7931a'; // Orange
 const OUTBOUND_COLOR = '#3399ff'; // Blue
@@ -50,7 +48,7 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
     header: 'Location',
     cell: ({ row }) => {
       const address = row.original.addr;
-      const type = row.original.connection_type;
+      const version = row.original.version;
       const city = row.original.geo?.city ?? 'N/A';
       const state = row.original.geo?.state ?? 'N/A';
       const country = row.original.geo?.country ?? 'N/A';
@@ -58,7 +56,17 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
         h('div', { class: 'font-bold  truncate max-w-[150px]' }, address),
         h('div', { class: 'truncate max-w-[150px]' }, `${city}`),
         h('div', { class: 'truncate max-w-[150px]' }, `${state}, ${country}`),
-        h('div', { class: 'text-xs truncate max-w-[150px]' }, `${type}`),
+        h(
+          'div',
+          {
+            class: `text-xs truncate max-w-[150px] mt-0.5 ${
+              version < 70015
+                ? 'dark:text-yellow-500 light:text-red-500 font-bold'
+                : ''
+            }`,
+          },
+          `Protocol Version: ${version}`
+        ),
       ]);
     },
   },
@@ -369,26 +377,8 @@ function renderMap() {
   }
 }
 
-// Format bytes to human-readable format (e.g., KB, MB)
-const formatBytes = (bytes: number) => {
-  if (!bytes) return '0 Bytes';
-  const units = ['Bytes', 'KB', 'MB', 'GB'];
-  let value = bytes;
-  let unitIndex = 0;
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex++;
-  }
-  return `${value.toFixed(2)} ${units[unitIndex]}`;
-};
-
-// Format Unix timestamp to readable date
-const formatTimestamp = (timestamp: number) => {
-  if (!timestamp) return 'N/A';
-  return new Date(timestamp * 1000).toLocaleString();
-};
-
 const rowSelection = ref<Record<number, boolean>>({});
+
 function onSelect(row: TableRow<PeerInfo & { geo?: GeoIpResponse }>) {
   // Clear previous selections
   Object.keys(rowSelection.value).forEach((key) => {
@@ -513,247 +503,12 @@ onUnmounted(() => {
     close-icon="solar:close-square-bold"
   >
     <template #body>
-      <div class="">
-        <div v-if="selectedPeer">
-          <div class="grid grid-cols-1 gap-3 p-4 pt-0 text-sm">
-            <div class="flex justify-between items-center">
-              <span class="font-medium text-gray-700 dark:text-gray-300"
-                >Peer ID</span
-              >
-              <UBadge
-                :color="selectedPeer.inbound ? 'warning' : 'secondary'"
-                variant="subtle"
-                size="lg"
-                >{{ selectedPeer.id }}</UBadge
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="font-medium text-gray-700 dark:text-gray-300"
-                >Address</span
-              >
-              <UBadge
-                :color="selectedPeer.inbound ? 'warning' : 'secondary'"
-                variant="subtle"
-                size="lg"
-                class="max-w-52 overflow-hidden"
-              >
-                {{ selectedPeer.addr }}</UBadge
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="font-medium text-gray-700 dark:text-gray-300"
-                >Connection Type</span
-              >
-              <UBadge
-                :color="selectedPeer.inbound ? 'warning' : 'secondary'"
-                variant="subtle"
-                size="lg"
-                >{{ selectedPeer.connection_type || 'N/A' }}</UBadge
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="font-medium text-gray-700 dark:text-gray-300"
-                >Inbound</span
-              >
-              <UBadge
-                :color="selectedPeer.inbound ? 'warning' : 'secondary'"
-                variant="subtle"
-                size="lg"
-                >{{ selectedPeer.inbound ? 'True' : 'False' }}</UBadge
-              >
-            </div>
-          </div>
-
-          <UTabs
-            :items="[
-              { label: 'Network', slot: 'network' },
-              { label: 'Blockchain', slot: 'blockchain' },
-              { label: 'Traffic', slot: 'traffic' },
-              { label: 'Geo', slot: 'geo' },
-            ]"
-            :color="selectedPeer.inbound ? 'warning' : 'secondary'"
-            class="mt-4"
-          >
-            <template #network>
-              <card-subtle>
-                <div class="grid grid-cols-1 gap-3 p-4 text-sm">
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Network Type</span
-                    >
-                    <span>{{ selectedPeer.network }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Services</span
-                    >
-                    <span class="max-w-52 text-right text-xs">
-                      {{ selectedPeer.servicesnames?.join(', ') || 'N/A' }}
-                    </span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Software Version</span
-                    >
-                    <span class="max-w-52 text-right">{{
-                      selectedPeer.subver || 'N/A'
-                    }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Protocol Version</span
-                    >
-                    <span>{{ selectedPeer.version || 'N/A' }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Transport Protocol</span
-                    >
-                    <span>{{
-                      selectedPeer.transport_protocol_type || 'N/A'
-                    }}</span>
-                  </div>
-                </div>
-              </card-subtle>
-            </template>
-
-            <template #blockchain>
-              <card-subtle>
-                <div class="grid grid-cols-1 gap-3 p-4 text-sm">
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Starting Height</span
-                    >
-                    <span>{{ selectedPeer.startingheight || 'N/A' }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Synced Blocks</span
-                    >
-                    <span>{{ selectedPeer.synced_blocks || 'N/A' }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Synced Headers</span
-                    >
-                    <span>{{ selectedPeer.synced_headers || 'N/A' }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Min Fee Filter</span
-                    >
-                    <span>{{
-                      selectedPeer.minfeefilter
-                        ? `${selectedPeer.minfeefilter} sat/byte`
-                        : 'N/A'
-                    }}</span>
-                  </div>
-                </div>
-              </card-subtle>
-            </template>
-
-            <template #traffic>
-              <card-subtle>
-                <div class="grid grid-cols-1 gap-3 p-4 text-sm">
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Bytes Sent</span
-                    >
-                    <span>{{ formatBytes(selectedPeer.bytessent) }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Bytes Received</span
-                    >
-                    <span>{{ formatBytes(selectedPeer.bytesrecv) }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Ping Time</span
-                    >
-                    <span>{{
-                      selectedPeer.pingtime
-                        ? `${(selectedPeer.pingtime * 1000).toFixed(2)} ms`
-                        : 'N/A'
-                    }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Min Ping</span
-                    >
-                    <span>{{
-                      selectedPeer.minping
-                        ? `${(selectedPeer.minping * 1000).toFixed(2)} ms`
-                        : 'N/A'
-                    }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Connection Time</span
-                    >
-                    <span>{{ formatTimestamp(selectedPeer.conntime) }}</span>
-                  </div>
-                </div>
-              </card-subtle>
-            </template>
-
-            <template #geo>
-              <card-subtle>
-                <div class="grid grid-cols-1 gap-3 p-4 text-sm">
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >City</span
-                    >
-                    <span>{{ selectedPeer.geo?.city || 'N/A' }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Postal</span
-                    >
-                    <span>{{ selectedPeer.geo?.postal || 'N/A' }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Country</span
-                    >
-                    <span>{{ selectedPeer.geo?.country || 'N/A' }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Latitude</span
-                    >
-                    <span>{{ selectedPeer.geo?.latitude || 'N/A' }}</span>
-                  </div>
-                  <USeparator></USeparator>
-                  <div class="flex justify-between">
-                    <span class="font-medium text-gray-700 dark:text-gray-300"
-                      >Longitude</span
-                    >
-                    <span>{{ selectedPeer.geo?.longitude || 'N/A' }}</span>
-                  </div>
-                </div>
-              </card-subtle>
-            </template>
-          </UTabs>
-        </div>
-        <div v-else class="text-center py-6">
-          <p class="text-gray-500 dark:text-gray-400">No peer selected</p>
-        </div>
-      </div>
+      <peer-details
+        v-if="selectedPeer"
+        :selected-peer="selectedPeer"
+        :node-index="nodeIndex"
+        @update="fetchPeers"
+      ></peer-details>
     </template>
   </USlideover>
 </template>
