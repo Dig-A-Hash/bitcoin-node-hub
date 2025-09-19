@@ -1,5 +1,3 @@
-import { ref, watch } from 'vue';
-
 export function useCustomColorMode() {
   const mode = ref(localStorage.getItem('theme') || 'light');
 
