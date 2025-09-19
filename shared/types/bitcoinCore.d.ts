@@ -273,14 +273,8 @@ export interface Transaction {
 export interface Block {
   hash: string;
   height: number;
+  time: number; // Block timestamp
 }
-
-// Response type for the visualizer data
-// export interface VisualizerData {
-//   transactions: Transaction[];
-//   blocks: Block[];
-//   totalTxCount: number;
-// }
 
 export interface LowPriorityCategory {
   count: number;
