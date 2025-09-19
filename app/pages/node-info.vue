@@ -109,7 +109,7 @@ onMounted(async () => {
             </div>
           </div>
         </div>
-        <div class="" v-if="nodeInfo.indexInfo.txindex">
+        <div class="">
           <block-visualizer-html></block-visualizer-html>
         </div>
       </card-subtle>
