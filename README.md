@@ -19,6 +19,7 @@ This app runs an API that will make clear text http calls to the bitcoin-cli run
 Important: Connecting to Bitcoin Nodes over the internet is very insecure due to making clear-text http API calls to each node. Consider modern encryption for connecting to nodes securely over the internet, like:
 
 - Stunnel or nginx as a reverse proxy to wrap RPC in TLS.
+- VPN
 - SSH tunneling for secure local access.
 - Third-party tools like RPC over Tor.
 
