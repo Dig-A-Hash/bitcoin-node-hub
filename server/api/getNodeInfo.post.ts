@@ -13,9 +13,9 @@ export default defineEventHandler(
   async (event): Promise<ApiResponse<NodeInfo>> => {
     try {
       // Parse the request body for the host (POST request)
-      const { nodeIndex } = z
-        .object({ nodeIndex: z.number().min(0).max(32) })
-        .parse(await readBody(event));
+      const { nodeIndex } = AppConstants.BASE_VALIDATION_SCHEMA.parse(
+        await readBody(event)
+      );
 
       // Get Bitcoin node credentials for the specified host
       const bitcoinNodeCredentials = getBitcoinNodeCredentials();
