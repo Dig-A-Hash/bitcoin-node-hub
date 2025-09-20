@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { number } from 'zod';
 import type { DashboardNode } from '~~/shared/types/dashboard';
 
-const router = useRouter();
+const { navigateToNodeInfo, navigateToPeers } = useHelpers();
 const { dashboardNode, nodeIndex } = defineProps<{
   dashboardNode: DashboardNode | null;
   nodeIndex: number;
@@ -32,18 +31,6 @@ const nodeProgress = computed(() => {
         : 0,
   };
 });
-
-function getSyncProgress(value: number) {
-  return Number((value * 1e10).toFixed(2));
-}
-
-function navigateToPeers(index: number) {
-  router.push(`/peers?i=${index}`);
-}
-
-function navigateToNodeInfo(index: number) {
-  router.push(`/node-info?i=${index}`);
-}
 </script>
 
 <template>
@@ -183,9 +170,11 @@ function navigateToNodeInfo(index: number) {
               <div class="flex justify-between">
                 <div class="text-2xl capitalize">
                   {{
-                    getSyncProgress(
-                      dashboardNode.blockchainInfo.verificationprogress
-                    )
+                    parseFloat(
+                      dashboardNode.blockchainInfo.verificationprogress.toFixed(
+                        2
+                      )
+                    ) * 100
                   }}%
                 </div>
                 <UIcon

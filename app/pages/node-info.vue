@@ -4,7 +4,7 @@ import type { NodeInfo } from '~~/shared/types/nodeInfo';
 
 const nodeInfo = ref<NodeInfo>();
 const bitcoinStore = useBitcoin();
-const router = useRouter();
+const { navigateToPeers } = useHelpers();
 const route = useRoute();
 const nodeIndex = parseInt(route.query.i ? route.query.i.toString() : '0');
 const dashboardNode = ref(bitcoinStore.dashboardNodes[nodeIndex]);
@@ -26,10 +26,6 @@ const formatBytes = (bytes: number) => {
   }
   return `${value.toFixed(2)} ${units[unitIndex]}`;
 };
-
-function navigateToPeers(index: number) {
-  router.push(`/peers?i=${index}`);
-}
 
 // Format timestamp to readable date
 const formatTimestamp = (millis: number) => new Date(millis).toLocaleString();
