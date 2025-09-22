@@ -4,7 +4,7 @@ import type { NodeName } from '~~/shared/types/nodeName';
 export const useBitcoin = defineStore('bitcoin', () => {
   const dashboardNodes = ref<(DashboardNode | null)[]>([]);
   const nodeCount = ref(0);
-  const nodeNames = ref<NodeName[]>();
+  const nodeNames = ref<NodeName[]>([]);
 
   async function fetchNodeNames() {
     const response = await $fetch<ApiResponse<NodeName[]>>(

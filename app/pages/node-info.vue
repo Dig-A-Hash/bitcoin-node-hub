@@ -105,10 +105,8 @@ onMounted(async () => {
             </div>
           </div>
         </div>
-        <div class="">
-          <block-visualizer-html></block-visualizer-html>
-        </div>
       </card-subtle>
+      <block-visualizer-html></block-visualizer-html>
 
       <!-- Network Info -->
 

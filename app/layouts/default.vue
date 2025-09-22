@@ -74,9 +74,12 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui';
 
+const router = useRouter();
+const bitcoinStore = useBitcoin();
+const bitcoinNodes = computed(() => bitcoinStore.nodeNames); // Reactively sync with nodeNames
+
 // State to control drawer
 const isOpen = ref(false);
-const router = useRouter();
 
 // Navigation items
 const navItems = ref<NavigationMenuItem[]>([
@@ -89,34 +92,58 @@ const navItems = ref<NavigationMenuItem[]>([
       isOpen.value = false; // Close the slideover
     },
   },
-  {
-    label: 'Search',
-    icon: 'material-symbols:search',
-    class: 'p-3 my-1',
-    to: '/search',
-    onSelect: () => {
-      isOpen.value = false; // Close the slideover
-    },
-  },
-  {
-    label: 'Settings',
-    icon: 'material-symbols:settings',
-    class: 'p-3 my-1',
-    to: '/settings',
-    onSelect: () => {
-      isOpen.value = false; // Close the slideover
-    },
-  },
-  {
-    label: 'About',
-    icon: 'material-symbols:person-play-rounded',
-    class: 'p-3 my-1',
-    to: '/settings',
-    onSelect: () => {
-      isOpen.value = false; // Close the slideover
-    },
-  },
 ]);
+
+// Watch bitcoinNodes and append to navItems
+watch(
+  bitcoinNodes,
+  (newNodes) => {
+    const nodeItems: NavigationMenuItem[] = newNodes.map((node, index) => ({
+      label: node.name, // Assuming node has a 'name' property
+      icon: 'bitcoin-icons:node-filled',
+      class: 'p-3 my-1',
+
+      children: [
+        {
+          label: 'General Info',
+          to: `/node-info?i=${index}`, // Use index instead of node.id
+        },
+      ],
+      onSelect: () => {
+        isOpen.value = false;
+      },
+    }));
+    navItems.value = [
+      ...navItems.value.filter(
+        (item) => !item.to?.toString().startsWith('/node/')
+      ),
+      ...nodeItems,
+    ];
+
+    // Append remaining static items.
+
+    navItems.value.push({
+      label: 'Settings',
+      icon: 'material-symbols:settings',
+      class: 'p-3 my-1',
+      to: '/settings',
+      onSelect: () => {
+        isOpen.value = false; // Close the slideover
+      },
+    });
+
+    navItems.value.push({
+      label: 'About',
+      icon: 'material-symbols:person-play-rounded',
+      class: 'p-3 my-1',
+      to: '/settings',
+      onSelect: () => {
+        isOpen.value = false; // Close the slideover
+      },
+    });
+  },
+  { immediate: true }
+);
 
 // Toggle drawer function
 const toggleDrawer = () => {
