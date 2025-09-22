@@ -16,12 +16,12 @@ Zoom in, navigate, and map peer geographic locations.
 
 This app runs an API that will make clear text http calls to the bitcoin-cli running on a Bitcoin Node.
 
-Important: Connecting to Bitcoin Nodes over the internet is very insecure due to making clear-text http API calls to each node. Consider modern encryption for connecting to nodes securely over the internet, like:
+Important: Connecting to Bitcoin Nodes over the internet is very insecure due to making clear-text http API calls to each node. Consider modern encryption for connecting to nodes securely, like:
 
 - Stunnel or nginx as a reverse proxy to wrap RPC in TLS.
-- VPN
 - SSH tunneling for secure local access.
 - Third-party tools like RPC over Tor.
+- VPN
 
 ## Disclaimer (Beta Testing)
 
@@ -31,7 +31,7 @@ Use this software at your own risk. The developers and contributors are not liab
 
 ## Dependencies
 
-This app requires [Node.js](https://nodejs.org/en), the latest version is always recommended. This app requires at least 1 Bitcoin Node. This app is only tested with [Bitcoin Knots](https://bitcoinknots.org/) because we do not want to see spam on the Bitcoin Network, but any Bitcoin Node should work.
+This app requires [Node.js](https://nodejs.org/en), the latest version is always recommended. At least 1 Bitcoin Node is required. This app is only tested with [Bitcoin Knots](https://bitcoinknots.org/) because we do not want to see spam on the Bitcoin Network, but any modern Bitcoin Node should work.
 
 ## Installation
 
@@ -45,7 +45,7 @@ Next, create a production build, which will be generated in the .output director
 
 `npm run build`
 
-Run the production build, by setting the desired port. NUXT_BITCOIN_NODE_CREDENTIALS must be setup with credentials for each node to be monitored. Setup both prior to running node `.output/server/index.mjs`.
+NUXT_BITCOIN_NODE_CREDENTIALS must be setup with credentials for each node to be monitored. Setup credentials to your nodes prior to running the server.
 
 ## Run Production Build
 
@@ -56,7 +56,7 @@ The command to run the app is simple.
 However, there is one required environment variable for your node credentials that must be specified, and there is an option to specify a Port.
 
 ```
-PORT=3600 NUXT_BITCOIN_NODE_CREDENTIALS='[{"name":"Node-Runner-Exp","user":"bitcoinrpc","password":"your-password","host":"192.168.1.420","port":"8332"},{"name":"Node-Runner","user":"bitcoinrpc","password":"your-password","host":"192.168.1.69","port":"8332"}]' node .output/server/index.mjs
+PORT=3600 NUXT_BITCOIN_NODE_CREDENTIALS='[{"name":"Node-Runner-Exp","user":"bitcoinrpc","password":"your-password","host":"192.168.1.420","port":"8332"},{"name":"Node-Runner","user":"bitcoinrpc","password":"your-password","host":"192.168.1.69","port":"8332","protocol": "http"}]' node .output/server/index.mjs
 ```
 
 The NUXT_BITCOIN_NODE_CREDENTIALS must be a valid JSON array.
@@ -64,17 +64,19 @@ The NUXT_BITCOIN_NODE_CREDENTIALS must be a valid JSON array.
 ```
 [
   {
-    "name":"Node-Runner-Exp","user":"bitcoinrpc",
+    "name":"Your-Node-1","user":"bitcoinrpc",
     "password":"your-password",
     "host":"192.168.1.420",
-    "port":"8332"
+    "port":"8332",
+    "protocol": "http"
   },
   {
-    "name":"Node-Runner",
+    "name":"Your-Node-2",
     "user":"bitcoinrpc",
     "password":"your-password",
     "host":"192.168.1.69",
-    "port":"8332"
+    "port":"8332",
+    "protocol": "http"
   }
 ]
 ```
