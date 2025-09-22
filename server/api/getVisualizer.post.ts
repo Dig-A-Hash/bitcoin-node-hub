@@ -9,6 +9,14 @@ import {
 import { AppConstants } from '~~/server/utils/constants';
 import { AxiosResponse } from 'axios';
 
+// Define caches outside the handler (global to the server process)
+const mempoolCache = new Map<
+  number,
+  { height: number; txs: Map<string, any> } // nodeIndex -> { block height, txid -> mempool details }
+>();
+const dustMinOutCache = new Map<string, number>(); // txid -> min output in satoshis (for dust checks)
+const blocksCache = new Map<number, Block[]>(); // height -> recent blocks (stable per height)
+
 // Define low-priority transaction categories
 interface LowPriorityCategory {
   count: number;
@@ -24,7 +32,22 @@ interface BitcoinRpcResponse {
   error?: { code: number; message: string };
 }
 
-// Define the POST endpoint
+/**
+ * Handles POST requests to fetch and process Bitcoin mempool data for visualization.
+ *
+ * Retrieves mempool transactions from a specified Bitcoin node, categorizes them (high-priority, low-fee, dust, ordinals, anomalous),
+ * and fetches recent blocks. Uses in-memory caching to reduce node load:
+ * - Caches mempool transaction details per node and block height, reusing data for known transactions and processing only new ones.
+ * - Caches dust check results (minimum output satoshis) per transaction to avoid redundant `getrawtransaction` calls.
+ * - Caches recent blocks per block height to avoid refetching until a new block is mined.
+ *
+ * Ensures fresh data on every request by fetching the latest mempool, while minimizing RPC calls through caching.
+ *
+ * @param event - The incoming HTTP event containing the request body with `nodeIndex`.
+ * @returns A promise resolving to an `ApiResponse<VisualizerData>` containing categorized transactions, recent blocks,
+ *          total transaction count, and low-priority category summaries.
+ * @throws Errors are caught and returned as an `ApiResponse` with `success: false` and error details.
+ */
 export default defineEventHandler(
   async (event): Promise<ApiResponse<VisualizerData>> => {
     try {
@@ -40,24 +63,49 @@ export default defineEventHandler(
       const rpc = createBitcoinRpc(bitcoinNodeCredentials[nodeIndex]);
       const rpcClient = new BitcoinRpcClient(nodeIndex);
 
-      // Fetch mempool, block count, and network info concurrently
-      const [mempool, blockCount, networkInfo] = await Promise.all([
-        rpcClient.mempool.getRawMempool(true),
-        rpcClient.blockchain.getBlockCount(),
-        rpcClient.network.getNetworkInfo(),
-      ]);
+      // Always fetch block count first (lightweight) to check/invalidate cache
+      const blockCount = await rpcClient.blockchain.getBlockCount();
 
-      // Process mempool data
+      // Check mempool cache
+      let cachedMempool = mempoolCache.get(nodeIndex);
+      if (!cachedMempool || cachedMempool.height !== blockCount) {
+        // New block or no cache: reset
+        cachedMempool = { height: blockCount, txs: new Map() };
+        mempoolCache.set(nodeIndex, cachedMempool);
+      }
+
+      // Fetch current mempool (lightweight, gets us fresh txs)
+      const mempool = await rpcClient.mempool.getRawMempool(true);
       const totalTxCount = Object.keys(mempool).length;
 
-      // Categorize transactions
+      // Identify new txids (not in cache)
+      const currentTxids = new Set(Object.keys(mempool));
+      const cachedTxids = new Set(cachedMempool.txs.keys());
+      const newTxids = [...currentTxids].filter(
+        (txid) => !cachedTxids.has(txid)
+      );
+
+      // Update cache: Add new txs, remove old ones
+      for (const txid of newTxids) {
+        cachedMempool.txs.set(txid, mempool[txid]);
+      }
+      for (const txid of cachedTxids) {
+        if (!currentTxids.has(txid)) {
+          cachedMempool.txs.delete(txid);
+          dustMinOutCache.delete(txid); // Clean up dust cache too
+        }
+      }
+
+      // Categorize transactions (reuse cached for known txs, process new ones)
       const highPriority: Transaction[] = [];
       const lowFee: Transaction[] = [];
       const dust: Transaction[] = [];
       const ordinals: Transaction[] = [];
       const anomalous: Transaction[] = [];
 
-      for (const [txid, details] of Object.entries(mempool)) {
+      // Process cached transactions
+      for (const [txid, details] of cachedMempool.txs) {
+        if (newTxids.includes(txid)) continue; // Skip new txs for now
         const fee = details.fees.base * 1e8; // Convert BTC to satoshis
         const feePerVbyte = fee / details.vsize;
         const tx: Transaction = {
@@ -72,95 +120,111 @@ export default defineEventHandler(
         if (feePerVbyte < 2) {
           lowFee.push(tx);
         } else if (details.vsize > 10000) {
-          // Large vsize suggests potential ordinal/inscription
-          // Ordinal transactions often include large amounts of data
           ordinals.push(tx);
         } else if (details.depends.length > 3 || details.bip125_replaceable) {
-          // Long dependency chains or RBF
           anomalous.push(tx);
         } else {
           highPriority.push(tx);
         }
       }
 
-      // Calculate dynamic dust threshold
+      // Fetch network info for dust threshold
+      const networkInfo = await rpcClient.network.getNetworkInfo();
       const minRelayFee = networkInfo.relayfee * 1e8;
       const dustThreshold = 0.5 * minRelayFee;
 
-      // Use all mempool transactions for dust checking
-      const sampledTxs = Object.entries(mempool).map(([txid, details]) => ({
-        txid,
-        fee: details.fees.base * 1e8,
-        vsize: details.vsize,
-        feePerVbyte: (details.fees.base * 1e8) / details.vsize,
-        time: details.time,
-      }));
-
-      // Batch fetch transaction details for all mempool transactions
-      const batchRequests = sampledTxs.map((tx, index) => ({
-        jsonrpc: '1.0',
-        id: `nuxt-rpc-tx-${index}`,
-        method: 'getrawtransaction',
-        params: [tx.txid, true],
-      }));
-      const responses: AxiosResponse<BitcoinRpcResponse[]> = await rpc.post(
-        '',
-        batchRequests
-      );
-
-      // Process batched responses for dust with improved error handling
+      // Process new transactions (including dust checks for all txs)
       let failedTxCount = 0;
-      const responseArray = Array.isArray(responses.data) ? responses.data : [];
-      if (!responseArray.length) {
-        console.warn(`No valid responses received from batched RPC call`);
-      }
-      for (const [index, response] of responseArray.entries()) {
-        try {
-          if (!response) {
-            console.warn(
-              `No response for tx ${
-                sampledTxs[index]?.txid ?? 'unknown'
-              } at index ${index}: Response is undefined`
-            );
-            failedTxCount++;
-            continue;
-          }
-          if (response.error) {
-            console.warn(
-              `Failed to fetch tx ${
-                sampledTxs[index]?.txid ?? 'unknown'
-              }: RPC error ${response.error.code}: ${response.error.message}`
-            );
-            failedTxCount++;
-            continue;
-          }
-          if (!response.result?.vout) {
-            console.warn(
-              `Invalid response for tx ${
-                sampledTxs[index]?.txid ?? 'unknown'
-              }: No result or vout data`
-            );
-            failedTxCount++;
-            continue;
-          }
-          const outputs = response.result.vout;
+      if (newTxids.length > 0) {
+        // Batch fetch getrawtransaction for new txids (dust checks)
+        const batchRequests = newTxids.map((txid, index) => ({
+          jsonrpc: '1.0',
+          id: `nuxt-rpc-tx-${index}`,
+          method: 'getrawtransaction',
+          params: [txid, true],
+        }));
+        const responses: AxiosResponse<BitcoinRpcResponse[]> = await rpc.post(
+          '',
+          batchRequests
+        );
 
-          if (outputs.some((out) => out.value * 1e8 < dustThreshold)) {
-            dust.push(sampledTxs[index]);
+        // Process batched responses
+        const responseArray = Array.isArray(responses.data)
+          ? responses.data
+          : [];
+        for (const [index, response] of responseArray.entries()) {
+          const txid = newTxids[index];
+          const details = mempool[txid];
+          const fee = details.fees.base * 1e8;
+          const feePerVbyte = fee / details.vsize;
+          const tx: Transaction = {
+            txid,
+            fee,
+            vsize: details.vsize,
+            feePerVbyte,
+            time: details.time,
+          };
+
+          // Categorize
+          if (feePerVbyte < 2) {
+            lowFee.push(tx);
+          } else if (details.vsize > 10000) {
+            ordinals.push(tx);
+          } else if (details.depends.length > 3 || details.bip125_replaceable) {
+            anomalous.push(tx);
+          } else {
+            highPriority.push(tx);
           }
-        } catch (e: any) {
-          console.warn(
-            `Unexpected error processing tx ${
-              sampledTxs[index]?.txid ?? 'unknown'
-            }: ${e.message}`
+
+          // Dust check
+          try {
+            if (response?.error) {
+              console.warn(
+                `Failed to fetch tx ${txid}: RPC error ${response.error.code}: ${response.error.message}`
+              );
+              failedTxCount++;
+              continue;
+            }
+            if (!response?.result?.vout) {
+              console.warn(
+                `Invalid response for tx ${txid}: No result or vout data`
+              );
+              failedTxCount++;
+              continue;
+            }
+            const outputs = response.result.vout;
+            const minOutSat = Math.min(
+              ...outputs.map((out) => out.value * 1e8)
+            );
+            dustMinOutCache.set(txid, minOutSat);
+          } catch (e: any) {
+            console.warn(
+              `Unexpected error processing tx ${txid}: ${e.message}`
+            );
+            failedTxCount++;
+          }
+        }
+        if (failedTxCount > 0) {
+          console.info(
+            `Dust fetching completed: ${failedTxCount}/${newTxids.length} new transactions failed`
           );
-          failedTxCount++;
         }
       }
-      if (failedTxCount > 0) {
-        console.info(
-          `Dust checking completed: ${failedTxCount}/${sampledTxs.length} transactions failed`
-        );
+
+      // Dust checks for all transactions using cache
+      for (const [txid, details] of Object.entries(mempool)) {
+        const minOutSat = dustMinOutCache.get(txid);
+        if (minOutSat !== undefined && minOutSat < dustThreshold) {
+          const fee = details.fees.base * 1e8;
+          const feePerVbyte = fee / details.vsize;
+          dust.push({
+            txid,
+            fee,
+            vsize: details.vsize,
+            feePerVbyte,
+            time: details.time,
+          });
+        }
       }
 
       // Sort high-priority txs by feePerVbyte (descending) then time (newest first)
@@ -191,25 +255,29 @@ export default defineEventHandler(
         anomalous: summarizeCategory(anomalous),
       };
 
-      // Fetch recent blocks (up to 5) with timestamps
-      const blockPromises = [];
-      for (let i = 0; i < 5 && blockCount - i > 0; i++) {
-        blockPromises.push(
-          rpcClient.blockchain
-            .getBlockHash(blockCount - i)
-            .then(async (getBlockHashResponse) => {
-              const block = await rpcClient.blockchain.getBlock(
-                getBlockHashResponse
-              );
-              return {
-                hash: block.hash,
-                height: block.height,
-                time: block.time,
-              } as Block;
-            })
-        );
+      // Fetch recent blocks: Use per-height cache (stable mid-block)
+      let blocks: Block[] = blocksCache.get(blockCount) || [];
+      if (blocks.length === 0) {
+        const blockPromises = [];
+        for (let i = 0; i < 5 && blockCount - i > 0; i++) {
+          blockPromises.push(
+            rpcClient.blockchain
+              .getBlockHash(blockCount - i)
+              .then(async (getBlockHashResponse) => {
+                const block = await rpcClient.blockchain.getBlock(
+                  getBlockHashResponse
+                );
+                return {
+                  hash: block.hash,
+                  height: block.height,
+                  time: block.time,
+                } as Block;
+              })
+          );
+        }
+        blocks = await Promise.all(blockPromises);
+        blocksCache.set(blockCount, blocks);
       }
-      const blocks: Block[] = await Promise.all(blockPromises);
 
       // Construct response
       const visualizerData: VisualizerData = {

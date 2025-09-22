@@ -68,7 +68,7 @@ export class BitcoinRpcClient {
     /**
      * Bans a specified IP address or subnet from connecting to the node.
      * @param ip - The IP address or subnet to ban (e.g., "192.168.0.69" or "192.168.0.0/24").
-     * @param banTime - The duration of the ban in seconds (0 for permanent ban).
+     * @param banTime - The duration of the ban in seconds (0 for 24-hour ban).
      * @param absolute - If true, banTime is an absolute Unix timestamp; if false, it’s relative to now.
      * @returns A promise resolving to true if the ban was successfully set.
      */

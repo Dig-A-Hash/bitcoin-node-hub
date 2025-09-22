@@ -18,16 +18,18 @@ export default defineEventHandler(
       );
 
       // Get Bitcoin node credentials
-      const bitcoinNodeCredentials = getBitcoinNodeCredentials();
-      const rpc = createBitcoinRpc(bitcoinNodeCredentials[nodeIndex]);
+      const rpcClient = new BitcoinRpcClient(nodeIndex);
+      // const bitcoinNodeCredentials = getBitcoinNodeCredentials();
+      // const rpc = createBitcoinRpc(bitcoinNodeCredentials[nodeIndex]);
 
       // Execute the setban RPC command
-      await rpc.post('', {
-        jsonrpc: '1.0',
-        id: `nuxt-rpc-setban-${ipAddress}`,
-        method: 'setban',
-        params: [ipAddress, 'add', 3153600000], // Ban the IP indefinitely
-      });
+      // await rpc.post('', {
+      //   jsonrpc: '1.0',
+      //   id: `nuxt-rpc-setban-${ipAddress}`,
+      //   method: 'setban',
+      //   params: [ipAddress, 'add', 3153600000], // Ban the IP indefinitely
+      // });
+      await rpcClient.ban.setBan(ipAddress);
 
       // Construct response
       return {

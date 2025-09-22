@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const route = useRoute();
 const nodeIndex = parseInt(route.query.i ? route.query.i.toString() : '0');
+const { appConfiguration } = useConfiguration();
 
 // Color constants for transaction blocks
 const LOW_FEE_COLOR = 'bg-blue-600';
@@ -8,12 +9,10 @@ const MEDIUM_LOW_FEE_COLOR = 'bg-cyan-500';
 const MEDIUM_HIGH_FEE_COLOR = 'bg-yellow-400';
 const HIGH_FEE_COLOR = 'bg-orange-500';
 const textDataSize = 'text-2xl';
+const isLoading = ref(false);
 
 import { ref, watch } from 'vue';
-import type {
-  VisualizerData,
-  LowPriorityCategory,
-} from '../../shared/types/bitcoinCore';
+import type { VisualizerData } from '~~/shared/types/bitcoinCore';
 
 const visualizerData = ref<VisualizerData>({
   transactions: [],
@@ -32,22 +31,24 @@ const BLOCK_TIME_SECONDS = 600; // 10 minutes
 const timeRemaining = ref(BLOCK_TIME_SECONDS);
 const lastBlockHeight = ref(0);
 const progressValue = ref(0);
+const blockTimerInterval = ref<NodeJS.Timeout | null>(null);
+const getVisualizerInterval = ref<NodeJS.Timeout | null>(null);
 
-function updateProgress() {
+function updateBlockTimer() {
   progressValue.value = Math.max(
     0,
     ((BLOCK_TIME_SECONDS - timeRemaining.value) / BLOCK_TIME_SECONDS) * 100
   );
 }
 
-function resetTimer(blockTime?: number) {
+function resetBlockTimer(blockTime?: number) {
   if (blockTime) {
     const elapsedSeconds = Math.floor(Date.now() / 1000 - blockTime);
     timeRemaining.value = Math.max(0, BLOCK_TIME_SECONDS - elapsedSeconds);
   } else {
     timeRemaining.value = BLOCK_TIME_SECONDS;
   }
-  updateProgress();
+  updateBlockTimer();
 }
 
 watch(
@@ -55,19 +56,10 @@ watch(
   (newHeight, oldHeight) => {
     if (newHeight && newHeight !== oldHeight) {
       lastBlockHeight.value = newHeight;
-      resetTimer(visualizerData.value.blocks[0]?.time);
+      resetBlockTimer(visualizerData.value.blocks[0]?.time);
     }
   }
 );
-
-const timerInterval = ref<NodeJS.Timeout | null>(null);
-onMounted(() => {
-  fetchVisualizerData(); // Fetch data first to get block timestamp
-  timerInterval.value = setInterval(() => {
-    timeRemaining.value = Math.max(-Infinity, timeRemaining.value - 1);
-    updateProgress();
-  }, 1000);
-});
 
 // Fetch data from API
 async function fetchVisualizerData() {
@@ -79,12 +71,13 @@ async function fetchVisualizerData() {
         body: { nodeIndex },
       }
     );
+
     if (response.success) {
       visualizerData.value = response.data;
       // Initialize timer with latest block time on first fetch
       if (visualizerData.value.blocks[0]?.time && lastBlockHeight.value === 0) {
         lastBlockHeight.value = visualizerData.value.blocks[0].height;
-        resetTimer(visualizerData.value.blocks[0].time);
+        resetBlockTimer(visualizerData.value.blocks[0].time);
       }
     } else {
       console.error('API error:', response);
@@ -118,27 +111,45 @@ const formattedTime = computed(() => {
   }
 });
 
-// Poll every 20 seconds
-const interval = ref<NodeJS.Timeout | null>(null);
+onMounted(async () => {
+  try {
+    isLoading.value = true;
+    getVisualizerInterval.value = setInterval(
+      fetchVisualizerData,
+      appConfiguration.mempoolVisualizer.POLL_INTERVAL
+    );
 
-onMounted(() => {
-  interval.value = setInterval(fetchVisualizerData, 20000);
+    await fetchVisualizerData(); // Fetch data first to get block timestamp
+    blockTimerInterval.value = setInterval(() => {
+      timeRemaining.value = Math.max(-Infinity, timeRemaining.value - 1);
+      updateBlockTimer();
+    }, 1000);
+  } catch (error) {
+    throw error;
+  } finally {
+    isLoading.value = false;
+  }
 });
 
 onBeforeUnmount(() => {
-  if (interval.value) clearInterval(interval.value);
-  if (timerInterval.value) clearInterval(timerInterval.value);
+  if (getVisualizerInterval.value) clearInterval(getVisualizerInterval.value);
+  if (blockTimerInterval.value) clearInterval(blockTimerInterval.value);
 });
 </script>
 
 <template>
-  {{ visualizerData.blocks[0]?.height }}
-  <div class="flex flex-col md:flex-row gap-2 p-2 font-sans">
+  <div class="flex flex-col md:flex-row gap-2 font-sans">
     <!-- Main 40x40 Grid for High-Priority Transactions -->
     <card-tile class="flex-1">
+      <template #header>
+        <div class="ml-2 my-2 text-lg">
+          Block {{ visualizerData.blocks[0]?.height }}
+        </div>
+      </template>
       <div class="p-4 h-90">
         <div
           class="flex flex-row flex-wrap space-x-1 space-y-1 overflow-y-auto w-full max-h-84"
+          v-if="!isLoading"
         >
           <template v-for="tx in visualizerData.transactions" :key="tx.txid">
             <UPopover mode="hover" :open-delay="500">
@@ -162,11 +173,22 @@ onBeforeUnmount(() => {
             </UPopover>
           </template>
         </div>
+        <div v-else>
+          <UProgress color="warning" class="max-w-sm mx-auto mt-12" />
+          <div class="text-center mt-2 text-sm">Loading Mempool...</div>
+        </div>
       </div>
       <template #footer>
-        <div class="p-2 text-sm text-gray-400">
-          Showing {{ visualizerData.transactions.length }} of
-          {{ visualizerData.totalTxCount }} transactions
+        <div class="p-2 ml-2">
+          Showing
+          <UBadge color="neutral" variant="subtle" size="xl">{{
+            visualizerData.transactions.length
+          }}</UBadge>
+          of
+          <UBadge color="neutral" variant="subtle" size="xl">{{
+            visualizerData.totalTxCount
+          }}</UBadge>
+          transactions
         </div>
       </template>
     </card-tile>
@@ -255,7 +277,7 @@ onBeforeUnmount(() => {
               kB
             </span>
           </div>
-          <div class="text-gray-500">Other</div>
+          <div class="text-gray-500">RBF/Large Chained Deps.</div>
         </div>
       </card-tile>
 
