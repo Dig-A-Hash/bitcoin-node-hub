@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 const bitcoinStore = useBitcoin();
 onMounted(async () => {
-  await bitcoinStore.fetchNodeCount();
+  await bitcoinStore.fetchNodeNames();
 });
 </script>
 

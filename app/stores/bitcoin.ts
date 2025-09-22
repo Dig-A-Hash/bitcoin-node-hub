@@ -1,19 +1,29 @@
 import { defineStore } from 'pinia';
-import type { NodeCount } from '~~/shared/types/nodeCount';
+import type { NodeName } from '~~/shared/types/nodeName';
 
 export const useBitcoin = defineStore('bitcoin', () => {
   const dashboardNodes = ref<(DashboardNode | null)[]>([]);
   const nodeCount = ref(0);
+  const nodeNames = ref<NodeName[]>();
 
-  async function fetchNodeCount() {
-    const response = await $fetch<ApiResponse<NodeCount>>('/api/getNodeCount', {
-      method: 'GET',
-    });
+  async function fetchNodeNames() {
+    const response = await $fetch<ApiResponse<NodeName[]>>(
+      '/api/getNodeNames',
+      {
+        method: 'GET',
+      }
+    );
 
     if (response.success && response.data) {
-      nodeCount.value = response.data.nodeCount;
+      nodeNames.value = response.data;
+      nodeCount.value = nodeNames.value.length;
     }
   }
 
-  return { dashboardNodes, nodeCount, fetchNodeCount };
+  return {
+    dashboardNodes,
+    nodeCount,
+    nodeNames,
+    fetchNodeNames,
+  };
 });
