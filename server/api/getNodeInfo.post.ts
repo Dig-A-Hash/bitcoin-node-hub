@@ -22,21 +22,20 @@ export default defineEventHandler(
         difficulty,
         indexInfo,
       ] = await Promise.all([
-        rpcClient.getBlockchainInfo(),
-        rpcClient.getNetworkInfo(),
-        rpcClient.getMempoolInfo(),
-        rpcClient.getMiningInfo(),
-        rpcClient.getNetTotals(),
-        rpcClient.getMemoryInfo(),
-        rpcClient.getDifficulty(),
-        rpcClient.getIndexInfo(),
+        rpcClient.blockchain.getBlockchainInfo(),
+        rpcClient.network.getNetworkInfo(),
+        rpcClient.mempool.getMempoolInfo(),
+        rpcClient.mining.getMiningInfo(),
+        rpcClient.network.getNetTotals(),
+        rpcClient.mempool.getMemoryInfo(),
+        rpcClient.mining.getDifficulty(),
+        rpcClient.config.getIndexInfo(),
       ]);
 
-      const credentials = getBitcoinNodeCredentials();
       const data: NodeInfo = {
         nodeIndex,
-        name: credentials[nodeIndex].name || credentials[nodeIndex].host,
-        host: credentials[nodeIndex].host,
+        name: rpcClient.name || rpcClient.host,
+        host: rpcClient.host,
         blockchainInfo,
         networkInfo,
         mempoolInfo,

@@ -220,36 +220,54 @@ export interface MempoolInfo {
   truc_policy: string;
 }
 
-// export interface Transaction {
-//   txid: string;
-//   hash: string;
-//   version: number;
-//   size: number;
-//   vsize: number;
-//   weight: number;
-//   locktime: number;
-//   vin: Array<{
-//     txid?: string;
-//     vout?: number;
-//     scriptSig?: { asm: string; hex: string };
-//     sequence: number;
-//   }>;
-//   vout: Array<{
-//     value: number;
-//     n: number;
-//     scriptPubKey: {
-//       asm: string;
-//       hex: string;
-//       type: string;
-//       addresses?: string[];
-//     };
-//   }>;
-//   hex: string;
-//   blockhash?: string;
-//   confirmations?: number;
-//   time?: number;
-//   blocktime?: number;
-// }
+export interface RawMempoolVerbose {
+  // A dictionary where the key is the transaction ID (txid) as a hex string, and the value is an object containing detailed transaction information.
+  [txid: string]: MempoolTransactionInfo;
+}
+
+/**
+ * Interface for the detailed information of a transaction in the mempool.
+ * Returned as part of the `getrawmempool` verbose response.
+ */
+export interface MempoolTransactionInfo {
+  // The transaction size in bytes.
+  size: number;
+  // The virtual transaction size as defined by BIP 141 (for SegWit transactions).
+  vsize: number;
+  // The transaction's weight (used for block size limits in SegWit).
+  weight: number;
+  // The total fee for the transaction in BTC (not satoshis).
+  fee: number;
+  // The modified fee in BTC, accounting for fee modifications (if any).
+  fees: { base: number };
+  modifiedfee: number;
+  // The Unix timestamp (seconds since epoch) when the transaction entered the mempool.
+  time: number;
+  // The block height at which the transaction entered the mempool.
+  height: number;
+  // The number of descendants (child transactions) in the mempool, including this transaction.
+  descendantcount: number;
+  // The total virtual size of this transaction and its descendants.
+  descendantsize: number;
+  // The total fees (in BTC) of this transaction and its descendants.
+  descendantfees: number;
+  // The number of ancestor transactions in the mempool, including this transaction.
+  ancestorcount: number;
+  // The total virtual size of this transaction and its ancestors.
+  ancestorsize: number;
+  // The total fees (in BTC) of this transaction and its ancestors.
+  ancestorfees: number;
+  // The transaction ID of the witness commitment (for SegWit transactions), if applicable.
+  wtxid: string;
+  // An array of dependency transaction IDs that must be confirmed before this transaction.
+  depends: string[];
+  // An array of transaction IDs that depend on this transaction (child transactions).
+  spentby: string[];
+  // Whether this transaction could be replaced due to BIP 125 (Replace-By-Fee).
+  bip125_replaceable: boolean;
+  // Whether this transaction is in the mempool's unbroadcast set (not yet broadcast to the network). Only included if explicitly queried.
+  unbroadcast?: boolean;
+}
 
 // Define the IndexInfo type for getindexinfo response
 export interface IndexInfo {
@@ -261,6 +279,10 @@ export interface IndexInfo {
 
 // Interface for getdifficulty (simple number return)
 export type Difficulty = number;
+
+// Type for the result of the `getblockcount` RPC call.
+// Represents the number of blocks in the longest blockchain.
+// export type BlockCount = number;
 
 export interface Transaction {
   txid: string;
@@ -276,13 +298,42 @@ export interface Block {
   time: number; // Block timestamp
 }
 
-export interface LowPriorityCategory {
-  count: number;
-  totalVsize: number;
-  avgFeePerVbyte: number;
-  exampleTxid?: string;
+/**
+ * Interface defining the structure of a ban entry in the ban list.
+ */
+export interface BanEntry {
+  address: string;
+  banned_until: number;
+  ban_created: number;
+  ban_reason: string;
 }
 
+export interface MempoolEntry {
+  size: number;
+  fee: number;
+  modifiedfee: number;
+  time: number;
+  height: number;
+  descendantcount: number;
+  descendantsize: number;
+  descendantfees: number;
+  ancestorcount: number;
+  ancestorsize: number;
+  ancestorfees: number;
+  wtxid: string;
+  depends: string[];
+}
+
+export interface BitcoinNodeCredential {
+  user: string;
+  password: string;
+  host: string;
+  port: string;
+  name: string;
+  protocol: string;
+}
+
+// This belongs in  visualizer type
 export interface VisualizerData {
   transactions: Transaction[];
   blocks: Block[];
@@ -293,12 +344,4 @@ export interface VisualizerData {
     ordinals: LowPriorityCategory;
     anomalous: LowPriorityCategory;
   };
-}
-
-export interface BitcoinNodeCredential {
-  user: string;
-  password: string;
-  host: string;
-  port: string;
-  name: string;
 }
