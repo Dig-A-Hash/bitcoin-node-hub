@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue';
 import type { TableColumn, TableRow } from '@nuxt/ui';
-import type { ApiResponse } from '../../shared/types/apiResponse';
-import type { PeerInfo } from '../../shared/types/bitcoinCore';
-import type { GeoIpResponse } from '../../shared/types/geoip';
+import type { ApiResponse } from '../../../shared/types/apiResponse';
+import type { PeerInfo } from '../../../shared/types/bitcoinCore';
+import type { GeoIpResponse } from '../../../shared/types/geoip';
 import { Map, View, Overlay } from 'ol';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
@@ -25,9 +25,8 @@ const STROKE_COLOR = '#000000'; // Black stroke for visibility
 const HEADER_HEIGHT = 135; // Replace with your actual header height (in pixels)
 
 const route = useRoute();
-const nodeIndex = parseInt(route.query.i ? route.query.i.toString() : '0');
+const nodeIndex = parseInt(route.params.i?.toString() || '');
 const bitcoinStore = useBitcoin();
-const dashboardNode = ref(bitcoinStore.dashboardNodes[nodeIndex]);
 
 const apiResponse = ref<ApiResponse<PeerInfo[]>>();
 const geoLocations = ref<GeoIpResponse[]>([]);
@@ -437,7 +436,7 @@ onUnmounted(() => {
 <template>
   <div class="mt-4 mx-4">
     <h1 class="text-xl mb-2 text-white">
-      {{ dashboardNode?.name }} Peer Connection Map
+      {{ bitcoinStore.nodeNames[nodeIndex]?.name }} Peer Connection Map
     </h1>
 
     <div class="flex space-x-4 mt-4">

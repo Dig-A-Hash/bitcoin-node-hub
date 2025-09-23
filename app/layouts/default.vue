@@ -1,8 +1,125 @@
+<script setup lang="ts">
+import type { NavigationMenuItem } from '@nuxt/ui';
+
+const bitcoinStore = useBitcoin();
+const isCollapsed = ref(false);
+const bitcoinNodes = computed(() => bitcoinStore.nodeNames); // Reactively sync with nodeNames
+
+// State to control drawer
+const isOpen = ref(false);
+
+// Navigation items
+const navItems = ref<NavigationMenuItem[]>([
+  {
+    label: 'Dashboard',
+    icon: 'material-symbols:dashboard',
+    class: 'p-3 my-1',
+    to: '/',
+    tooltip: {
+      text: 'Dashboard',
+    },
+    onSelect: () => {
+      isOpen.value = false; // Close the slideover
+    },
+  },
+]);
+
+// Watch bitcoinNodes and append to navItems
+watch(
+  bitcoinNodes,
+  (newNodes) => {
+    const nodeItems: NavigationMenuItem[] = newNodes.map((node, index) => ({
+      label: node.name, // Assuming node has a 'name' property
+      icon: 'material-symbols:network-node',
+      class: 'p-3 my-1',
+      tooltip: {
+        text: node.name,
+      },
+      children: [
+        {
+          label: 'General Info',
+          to: `/node-info/${index}`,
+        },
+        {
+          label: 'Mempool',
+          to: `/mempool/${index}`,
+        },
+        {
+          label: 'Peers',
+          to: `/peers/${index}`,
+        },
+      ],
+      onSelect: () => {
+        isOpen.value = false;
+      },
+    }));
+
+    navItems.value = [...navItems.value, ...nodeItems];
+
+    if (
+      !navItems.value.find((item) => item.label === 'Settings') &&
+      newNodes.length
+    ) {
+      // Append remaining static items.
+
+      navItems.value.push({
+        label: 'Settings',
+        icon: 'material-symbols:settings',
+        class: 'p-3 my-1',
+        to: '/settings',
+        tooltip: {
+          text: 'Settings',
+        },
+        onSelect: () => {
+          isOpen.value = false; // Close the slideover
+        },
+      });
+
+      navItems.value.push({
+        label: 'About',
+        icon: 'material-symbols:person-play-rounded',
+        class: 'p-3 my-1',
+        to: '/settings',
+        tooltip: {
+          text: 'Settings',
+        },
+        onSelect: () => {
+          isOpen.value = false; // Close the slideover
+        },
+      });
+
+      navItems.value.push({
+        label: 'Collapse Menu',
+        icon: computed(() =>
+          isCollapsed.value
+            ? 'material-symbols:keyboard-double-arrow-right'
+            : 'material-symbols:keyboard-double-arrow-left'
+        ) as unknown as string,
+        class: 'p-3 my-1 hidden sm:flex',
+        tooltip: {
+          text: 'Expand menu',
+        },
+        onSelect: () => {
+          isCollapsed.value = !isCollapsed.value;
+        },
+      });
+    }
+  },
+  { immediate: true }
+);
+
+// Toggle drawer function
+const toggleDrawer = () => {
+  isOpen.value = !isOpen.value;
+};
+</script>
+
 <template>
   <div class="flex min-h-screen">
     <!-- Sidebar for large screens -->
     <aside
-      class="hidden lg:block w-64 border-r border-accented/50 dark:bg-elevated/50 light:bg-elevated/60"
+      class="hidden lg:block border-r border-accented/50 dark:bg-elevated/50 light:bg-elevated/60"
+      :class="`${isCollapsed ? 'w-16' : 'w-64'}`"
     >
       <div class="flex items-center p-3 justify-center">
         <UIcon
@@ -10,10 +127,15 @@
           name="bitcoin-icons:bitcoin-circle-filled"
           class="dark:text-orange-400 light:text-orange-700/80 mr-1"
         ></UIcon>
-        <span class="text-lg font-semibold">Bitcoin Node Hub</span>
+        <span class="text-lg font-semibold" v-if="!isCollapsed"
+          >Bitcoin Node Hub</span
+        >
       </div>
+
       <div class="p-2 pt-0">
         <UNavigationMenu
+          :highlight="true"
+          :collapsed="isCollapsed"
           :items="navItems"
           orientation="vertical"
           color="secondary"
@@ -70,83 +192,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import type { NavigationMenuItem } from '@nuxt/ui';
-
-const router = useRouter();
-const bitcoinStore = useBitcoin();
-const bitcoinNodes = computed(() => bitcoinStore.nodeNames); // Reactively sync with nodeNames
-
-// State to control drawer
-const isOpen = ref(false);
-
-// Navigation items
-const navItems = ref<NavigationMenuItem[]>([
-  {
-    label: 'Dashboard',
-    icon: 'material-symbols:dashboard',
-    class: 'p-3 my-1',
-    to: '/',
-    onSelect: () => {
-      isOpen.value = false; // Close the slideover
-    },
-  },
-]);
-
-// Watch bitcoinNodes and append to navItems
-watch(
-  bitcoinNodes,
-  (newNodes) => {
-    const nodeItems: NavigationMenuItem[] = newNodes.map((node, index) => ({
-      label: node.name, // Assuming node has a 'name' property
-      icon: 'bitcoin-icons:node-filled',
-      class: 'p-3 my-1',
-
-      children: [
-        {
-          label: 'General Info',
-          to: `/node-info?i=${index}`, // Use index instead of node.id
-        },
-      ],
-      onSelect: () => {
-        isOpen.value = false;
-      },
-    }));
-    navItems.value = [
-      ...navItems.value.filter(
-        (item) => !item.to?.toString().startsWith('/node/')
-      ),
-      ...nodeItems,
-    ];
-
-    // Append remaining static items.
-
-    navItems.value.push({
-      label: 'Settings',
-      icon: 'material-symbols:settings',
-      class: 'p-3 my-1',
-      to: '/settings',
-      onSelect: () => {
-        isOpen.value = false; // Close the slideover
-      },
-    });
-
-    navItems.value.push({
-      label: 'About',
-      icon: 'material-symbols:person-play-rounded',
-      class: 'p-3 my-1',
-      to: '/settings',
-      onSelect: () => {
-        isOpen.value = false; // Close the slideover
-      },
-    });
-  },
-  { immediate: true }
-);
-
-// Toggle drawer function
-const toggleDrawer = () => {
-  isOpen.value = !isOpen.value;
-};
-</script>

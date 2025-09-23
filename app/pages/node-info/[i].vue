@@ -6,8 +6,7 @@ const nodeInfo = ref<NodeInfo>();
 const bitcoinStore = useBitcoin();
 const { navigateToPeers } = useHelpers();
 const route = useRoute();
-const nodeIndex = parseInt(route.query.i ? route.query.i.toString() : '0');
-const dashboardNode = ref(bitcoinStore.dashboardNodes[nodeIndex]);
+const nodeIndex = parseInt(route.params.i?.toString() || '');
 const isLocalAddressesDrawerOpen = ref(false);
 const isLocalServicesDrawerOpen = ref(false);
 const isLoading = ref(false);
@@ -31,7 +30,7 @@ const formatBytes = (bytes: number) => {
 const formatTimestamp = (millis: number) => new Date(millis).toLocaleString();
 
 // Fetch data
-async function fetchNodeInfo(host: string) {
+async function fetchNodeInfo() {
   try {
     isLoading.value = true;
     const response = await $fetch<ApiResponse<NodeInfo>>('/api/getNodeInfo', {
@@ -50,12 +49,15 @@ async function fetchNodeInfo(host: string) {
 }
 
 onMounted(async () => {
-  await fetchNodeInfo(dashboardNode.value?.host || '');
+  await fetchNodeInfo();
 });
 </script>
 
 <template>
   <UContainer class="mt-4">
+    <h1 class="text-xl mb-4 text-white">
+      {{ bitcoinStore.nodeNames[nodeIndex]?.name }} General Info
+    </h1>
     <div v-if="nodeInfo && !isLoading" class="space-y-4 mb-4">
       <!-- Node Overview -->
       <card-subtle class=" ">
@@ -106,7 +108,6 @@ onMounted(async () => {
           </div>
         </div>
       </card-subtle>
-      <block-visualizer-html></block-visualizer-html>
 
       <!-- Network Info -->
 

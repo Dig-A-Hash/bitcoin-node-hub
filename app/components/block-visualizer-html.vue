@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const route = useRoute();
-const nodeIndex = parseInt(route.query.i ? route.query.i.toString() : '0');
+const nodeIndex = parseInt(route.params.i?.toString() || '');
 const { appConfiguration } = useConfiguration();
 
 // Color constants for transaction blocks
@@ -138,17 +138,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex flex-col md:flex-row gap-2 font-sans">
-    <!-- Main 40x40 Grid for High-Priority Transactions -->
-    <card-tile class="flex-1">
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+    <!-- Main Grid for High-Priority Transactions -->
+    <card-subtle class="col-span-2">
       <template #header>
-        <div class="ml-2 my-2 text-lg">
+        <div class="ml-4 my-2 text-lg">
           Block {{ visualizerData.blocks[0]?.height }}
         </div>
       </template>
-      <div class="p-4 h-90">
+      <div class="p-4 h-94">
         <div
-          class="flex flex-row flex-wrap space-x-1 space-y-1 overflow-y-auto w-full max-h-84"
+          class="flex flex-row flex-wrap space-x-1 space-y-1 overflow-y-auto w-full max-h-87"
           v-if="!isLoading"
         >
           <template v-for="tx in visualizerData.transactions" :key="tx.txid">
@@ -179,7 +179,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <template #footer>
-        <div class="p-2 ml-2">
+        <div class="p-4">
           Showing
           <UBadge color="neutral" variant="subtle" size="xl">{{
             visualizerData.transactions.length
@@ -191,14 +191,14 @@ onBeforeUnmount(() => {
           transactions
         </div>
       </template>
-    </card-tile>
+    </card-subtle>
 
     <!-- Sidebar for Low-Priority Categories and Timer -->
-    <div class="flex flex-col gap-2 w-full md:w-64">
-      <card-tile>
+    <div class="space-y-2">
+      <card-subtle>
         <!-- Low Fee -->
 
-        <div class="p-2">
+        <div class="p-4">
           <div :class="textDataSize" class="flex justify-between items-center">
             <div>
               {{ visualizerData.lowPriorityCategories.lowFee.count }}
@@ -214,12 +214,12 @@ onBeforeUnmount(() => {
           </div>
           <div class="text-gray-500">Low Fee</div>
         </div>
-      </card-tile>
+      </card-subtle>
 
       <!-- Dust -->
 
-      <card-tile>
-        <div class="p-2">
+      <card-subtle>
+        <div class="p-4">
           <div :class="textDataSize" class="flex justify-between items-center">
             <div>
               {{ visualizerData.lowPriorityCategories.dust.count }}
@@ -235,12 +235,12 @@ onBeforeUnmount(() => {
           </div>
           <div class="text-gray-500">Dust</div>
         </div>
-      </card-tile>
+      </card-subtle>
 
       <!-- Ordinals -->
 
-      <card-tile>
-        <div class="p-2">
+      <card-subtle>
+        <div class="p-4">
           <div :class="textDataSize" class="flex justify-between items-center">
             <div>
               {{ visualizerData.lowPriorityCategories.ordinals.count }}
@@ -257,12 +257,12 @@ onBeforeUnmount(() => {
           </div>
           <div class="text-gray-500">Ordinals & Inscriptions</div>
         </div>
-      </card-tile>
+      </card-subtle>
 
       <!-- Ordinals -->
 
-      <card-tile>
-        <div class="p-2">
+      <card-subtle>
+        <div class="p-4">
           <div :class="textDataSize" class="flex justify-between items-center">
             <div>
               {{ visualizerData.lowPriorityCategories.anomalous.count }}
@@ -279,12 +279,12 @@ onBeforeUnmount(() => {
           </div>
           <div class="text-gray-500">RBF/Large Chained Deps.</div>
         </div>
-      </card-tile>
+      </card-subtle>
 
       <!-- Timer Card -->
 
-      <card-tile>
-        <div class="p-2">
+      <card-subtle>
+        <div class="p-4">
           <p :class="textDataSize">
             {{ formattedTime }}
           </p>
@@ -296,7 +296,7 @@ onBeforeUnmount(() => {
             class="mt-2"
           />
         </div>
-      </card-tile>
+      </card-subtle>
     </div>
   </div>
 </template>
