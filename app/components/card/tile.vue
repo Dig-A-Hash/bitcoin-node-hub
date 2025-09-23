@@ -19,7 +19,7 @@ const hasHeader = computed(() => !!slots.header);
     :ui="{
       root: 'rounded-lg overflow-hidden ring-1 light:ring-gray-400 dark:ring-slate-700 light:bg-gray-100',
       header: `p-0 sm:px-2 ${headerClass}`,
-      body: `p-0 sm:p-0   rounded-t-none ${
+      body: `p-0 sm:p-0 rounded-t-none ${
         hasFooter ? 'rounded-t-lg' : 'rounded-b-lg'
       }`,
       footer: 'p-0 sm:px-0',
