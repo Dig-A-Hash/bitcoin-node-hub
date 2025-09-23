@@ -2,7 +2,6 @@ import { defineStore } from 'pinia';
 import type { NodeName } from '~~/shared/types/nodeName';
 
 export const useBitcoin = defineStore('bitcoin', () => {
-  const dashboardNodes = ref<(DashboardNode | null)[]>([]);
   const nodeCount = ref(0);
   const nodeNames = ref<NodeName[]>([]);
 
@@ -21,7 +20,6 @@ export const useBitcoin = defineStore('bitcoin', () => {
   }
 
   return {
-    dashboardNodes,
     nodeCount,
     nodeNames,
     fetchNodeNames,
