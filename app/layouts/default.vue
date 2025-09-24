@@ -5,8 +5,8 @@ const bitcoinStore = useBitcoin();
 const isCollapsed = ref(false);
 const bitcoinNodes = computed(() => bitcoinStore.nodeNames); // Reactively sync with nodeNames
 
-// State to control drawer
-const isOpen = ref(false);
+// State to control mobile menu drawer
+const isMobileMenuOpen = ref(false);
 
 // Navigation items
 const navItems = ref<NavigationMenuItem[]>([
@@ -19,10 +19,10 @@ const navItems = ref<NavigationMenuItem[]>([
       text: 'Dashboard',
     },
     onSelect: () => {
-      isOpen.value = false; // Close the slideover
+      isMobileMenuOpen.value = false; // Close the slideover
     },
   },
-]);
+] satisfies NavigationMenuItem[]);
 
 // Watch bitcoinNodes and append to navItems
 watch(
@@ -30,11 +30,12 @@ watch(
   (newNodes) => {
     const nodeItems: NavigationMenuItem[] = newNodes.map((node, index) => ({
       label: node.name, // Assuming node has a 'name' property
-      icon: 'material-symbols:network-node',
       class: 'p-3 my-1',
       tooltip: {
         text: node.name,
       },
+      disabled: computed(() => bitcoinNodes.value[index]?.isIbd), // Use computed to keep disabled reactive
+      slot: 'components' as const,
       children: [
         {
           label: 'General Info',
@@ -50,18 +51,21 @@ watch(
         },
       ],
       onSelect: () => {
-        isOpen.value = false;
+        isCollapsed.value = false;
+        isMobileMenuOpen.value = false;
       },
     }));
 
-    navItems.value = [...navItems.value, ...nodeItems];
+    navItems.value = [
+      navItems.value[0], // Keep Dashboard
+      ...nodeItems,
+    ];
 
     if (
       !navItems.value.find((item) => item.label === 'Settings') &&
       newNodes.length
     ) {
-      // Append remaining static items.
-
+      // Append remaining static items
       navItems.value.push({
         label: 'Settings',
         icon: 'material-symbols:settings',
@@ -71,7 +75,7 @@ watch(
           text: 'Settings',
         },
         onSelect: () => {
-          isOpen.value = false; // Close the slideover
+          isMobileMenuOpen.value = false; // Close the slideover
         },
       });
 
@@ -79,12 +83,12 @@ watch(
         label: 'About',
         icon: 'material-symbols:person-play-rounded',
         class: 'p-3 my-1',
-        to: '/settings',
+        to: '/about',
         tooltip: {
           text: 'Settings',
         },
         onSelect: () => {
-          isOpen.value = false; // Close the slideover
+          isMobileMenuOpen.value = false; // Close the slideover
         },
       });
 
@@ -110,7 +114,7 @@ watch(
 
 // Toggle drawer function
 const toggleDrawer = () => {
-  isOpen.value = !isOpen.value;
+  isMobileMenuOpen.value = !isMobileMenuOpen.value;
 };
 </script>
 
@@ -140,7 +144,19 @@ const toggleDrawer = () => {
           orientation="vertical"
           color="secondary"
           class="w-full"
-        />
+        >
+          <template #components-leading="{ index }">
+            <UIcon
+              size="17"
+              name="material-symbols:network-node"
+              :class="`${
+                bitcoinNodes[index - 1]?.isIbd
+                  ? 'dark:text-yellow-500 light:text-amber-700'
+                  : 'dark:text-green-500 light:text-green-700'
+              }`"
+            ></UIcon>
+          </template>
+        </UNavigationMenu>
       </div>
     </aside>
 
@@ -171,7 +187,7 @@ const toggleDrawer = () => {
 
       <!-- Nav Drawer for smaller screens -->
       <USlideover
-        v-model:open="isOpen"
+        v-model:open="isMobileMenuOpen"
         :ui="{ content: 'w-64', body: 'p-2 sm:p-2' }"
         side="left"
         title="Bitcoin Node Hub"
