@@ -1,14 +1,31 @@
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui';
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import type { DashboardNode } from '~~/shared/types/dashboard';
 
 const { navigateToNodeInfo, navigateToPeers } = useHelpers();
+const { formatSecondsToDays } = useTextFormatting();
+const bitcoinStore = useBitcoin();
+
 const { dashboardNode, nodeIndex } = defineProps<{
   dashboardNode: DashboardNode | null;
   nodeIndex: number;
 }>();
+
 const bytesInGB: number = 1073741824; // 1 GB = 2^30 bytes
+const bitcoinNodes = computed(() => bitcoinStore.nodeNames); // Reactively sync with nodeNames
+
+// Compute status reactively
+const status = computed(() => {
+  if (bitcoinNodes.value[nodeIndex]?.isIbd) {
+    return 'Syncing';
+  } else if (!dashboardNode) {
+    return 'Loading';
+  } else {
+    return 'Online';
+  }
+});
 
 // Compute percentages for the single node, rounded to whole numbers
 const nodeProgress = computed(() => {
@@ -31,6 +48,58 @@ const nodeProgress = computed(() => {
         : 0,
   };
 });
+
+// Navigation items
+const navItems = ref<DropdownMenuItem[]>([] satisfies DropdownMenuItem[]);
+
+watch(
+  bitcoinNodes,
+  (newNodes) => {
+    // generate menu
+    if (
+      !navItems.value.find((item) => item.label === 'General Info') &&
+      newNodes.length
+    ) {
+      navItems.value.push({
+        label: 'General Info',
+        to: `/node-info/${nodeIndex}`,
+      });
+
+      navItems.value.push({
+        label: 'Mempool',
+        to: `/mempool/${nodeIndex}`,
+      });
+
+      navItems.value.push({
+        label: 'Peers',
+        to: `/peers/${nodeIndex}`,
+      });
+    }
+  },
+  { immediate: true, deep: true }
+);
+
+function getStatusColor() {
+  switch (status.value) {
+    case 'Syncing':
+    case 'Loading':
+      return 'bg-yellow-500/15';
+
+    default:
+      return 'bg-green-500/15';
+  }
+}
+
+function getStatusLightColor() {
+  switch (status.value) {
+    case 'Syncing':
+    case 'Loading':
+      return 'warning';
+
+    default:
+      return 'success';
+  }
+}
 </script>
 
 <template>
@@ -39,19 +108,19 @@ const nodeProgress = computed(() => {
       <div class="flex items-center">
         <div
           class="border-r dark:border-slate-800 light:border-slate-500"
-          :class="dashboardNode ? 'bg-green-subtle' : 'bg-yellow-subtle'"
+          :class="getStatusColor()"
         >
           <div class="rounded-none rounded-tl-lg px-4 h-12 flex items-center">
             <div class="text-center">
               <div class="flex items-center">
                 <UChip
                   standalone
+                  :color="getStatusLightColor()"
                   inset
                   class="mr-2"
-                  :color="dashboardNode ? 'success' : 'warning'"
                 />
                 <div class="text-xs">
-                  {{ dashboardNode ? 'Online' : 'Pending' }}
+                  {{ status }}
                 </div>
               </div>
             </div>
@@ -61,30 +130,28 @@ const nodeProgress = computed(() => {
           {{ dashboardNode ? dashboardNode.name : `Node ${nodeIndex}` }}
         </div>
         <div class="border-l dark:border-slate-800 light:border-slate-500 flex">
-          <UTooltip
-            v-if="dashboardNode?.indexInfo.txindex"
-            :text="dashboardNode ? 'Search Transactions' : 'Node pending'"
-          >
-            <UButton
-              class="rounded-none h-12"
-              variant="ghost"
-              color="secondary"
-              @click="navigateToNodeInfo(nodeIndex)"
+          <UDropdownMenu :items="navItems">
+            <UTooltip
+              :text="
+                !dashboardNode ||
+                dashboardNode.blockchainInfo.initialblockdownload
+                  ? 'Actions are Disabled'
+                  : 'Actions'
+              "
             >
-              <UIcon size="24" name="material-symbols:search"></UIcon>
-            </UButton>
-          </UTooltip>
-          <UTooltip :text="dashboardNode ? 'All node details' : 'Node pending'">
-            <UButton
-              class="rounded-none rounded-tr-lg h-12"
-              color="secondary"
-              variant="ghost"
-              :disabled="!dashboardNode"
-              @click="navigateToNodeInfo(nodeIndex)"
-            >
-              <UIcon size="24" name="material-symbols:more-vert"></UIcon>
-            </UButton>
-          </UTooltip>
+              <UButton
+                class="rounded-none rounded-tr-lg h-12"
+                color="secondary"
+                variant="ghost"
+                :disabled="
+                  !dashboardNode ||
+                  dashboardNode.blockchainInfo.initialblockdownload
+                "
+              >
+                <UIcon size="24" name="material-symbols:more-vert"></UIcon>
+              </UButton>
+            </UTooltip>
+          </UDropdownMenu>
         </div>
       </div>
     </template>
@@ -136,16 +203,11 @@ const nodeProgress = computed(() => {
             </div>
           </card-tile>
           <card-tile v-else>
-            <!-- TODO: change this to Bytes Downloaded from nuxt-rpc-nettotals-->
             <div class="p-2 px-4">
               <div class="text-2xl">
-                {{
-                  dashboardNode.blockchainInfo.headers.toLocaleString('en-US', {
-                    style: 'decimal',
-                  })
-                }}
+                {{ formatSecondsToDays(dashboardNode.upTime) }}
               </div>
-              <div class="text-gray-500">Headers</div>
+              <div class="text-gray-500">Up Time</div>
             </div>
           </card-tile>
           <card-tile>

@@ -5,5 +5,6 @@ export interface DashboardNode {
   blockchainInfo: BlockchainInfo;
   networkInfo: NetworkInfo;
   indexInfo: IndexInfo;
+  upTime: number;
   error?: string;
 }
