@@ -11,8 +11,6 @@ export default defineEventHandler(
         bitcoinNodeCredentials.map(async (item, index) => {
           const rpcClient = new BitcoinRpcClient(index);
           const indexResponse = await rpcClient.config.getIndexInfo();
-          console.log(index);
-          console.dir(indexResponse);
           return {
             host: item.host,
             name: item.name || item.host,
