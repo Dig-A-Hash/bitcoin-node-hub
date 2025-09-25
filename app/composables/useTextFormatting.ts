@@ -29,7 +29,7 @@ export function useTextFormatting() {
     const roundedDays = Math.round(days * 10) / 10;
 
     // Return as string with "days" or "day" based on value
-    return `${roundedDays} ${roundedDays === 1 ? 'day' : 'days'}`;
+    return `${roundedDays} ${roundedDays === 1 ? 'Day' : 'Days'}`;
   };
 
   return { formatBytes, formatTimestamp, formatSecondsToDays };
