@@ -228,6 +228,27 @@ async function fetchGeoLocations(peers: PeerInfo[]) {
     const geo = newGeoLocations.find((g) => g.ip === ip);
     return { ...peer, geo };
   });
+
+  // Sort combinedPeerData by all fields at once
+  combinedPeerData.value.sort((a, b) => {
+    const keyA = [
+      a.version || '0.0.0', // Version (ascending)
+      a.inbound ? '0' : '1', // inbound: true first
+      a.geo?.country || 'ZZ', // Country (alphabetical)
+      a.geo?.state || 'ZZ', // State (alphabetical)
+      a.geo?.city || 'ZZ', // City (alphabetical)
+    ].join('|');
+
+    const keyB = [
+      b.version || '0.0.0',
+      b.inbound ? '0' : '1',
+      b.geo?.country || 'ZZ',
+      b.geo?.state || 'ZZ',
+      b.geo?.city || 'ZZ',
+    ].join('|');
+
+    return keyA.localeCompare(keyB);
+  });
 }
 
 function renderMap() {
@@ -436,11 +457,11 @@ onUnmounted(() => {
 <template>
   <div class="mt-4 mx-4">
     <h1 class="text-xl mb-2 text-white">
-      {{ bitcoinStore.nodeNames[nodeIndex]?.name }} Peer Connection Map
+      {{ bitcoinStore.nodeNames[nodeIndex]?.name }} Peers
     </h1>
 
     <div class="flex space-x-4 mt-4">
-      <card-subtle class="w-100">
+      <card-subtle class="w-110">
         <template #header>
           <div class="p-2">{{ combinedPeerData.length }} Connected Nodes</div>
         </template>
@@ -476,7 +497,20 @@ onUnmounted(() => {
       </card-subtle>
       <card-subtle class="w-full">
         <template #header>
-          <div class="p-2">Geographic Connection Map</div>
+          <div class="p-2 flex justify-between text-sm">
+            <div>
+              <UBadge size="md" class="bg-amber-600 text-white mr-1">
+                {{ combinedPeerData.filter((item) => item.inbound).length }}
+              </UBadge>
+              Incoming
+            </div>
+            <div>
+              Outgoing
+              <UBadge size="md" class="bg-blue-500 text-white ml-1">
+                {{ combinedPeerData.filter((item) => !item.inbound).length }}
+              </UBadge>
+            </div>
+          </div>
         </template>
         <div>
           <div
