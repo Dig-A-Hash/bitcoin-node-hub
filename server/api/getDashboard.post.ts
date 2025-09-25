@@ -11,12 +11,13 @@ export default defineEventHandler(
 
       const rpcClient = new BitcoinRpcClient(nodeIndex);
 
-      const [blockchainInfo, networkInfo, indexInfo, upTime] =
+      const [blockchainInfo, networkInfo, indexInfo, upTime, netTotals] =
         await Promise.all([
           rpcClient.blockchain.getBlockchainInfo(),
           rpcClient.network.getNetworkInfo(),
           rpcClient.config.getIndexInfo(),
           rpcClient.network.getUptime(),
+          rpcClient.network.getNetTotals(),
         ]);
 
       const data: DashboardNode = {
@@ -27,6 +28,7 @@ export default defineEventHandler(
         networkInfo,
         indexInfo,
         upTime,
+        netTotals,
       };
 
       return {

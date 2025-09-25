@@ -1,3 +1,5 @@
+import type { NetTotals } from './bitcoinCore';
+
 export interface DashboardNode {
   nodeIndex: number;
   name: string;
@@ -6,5 +8,6 @@ export interface DashboardNode {
   networkInfo: NetworkInfo;
   indexInfo: IndexInfo;
   upTime: number;
+  netTotals: NetTotals;
   error?: string;
 }

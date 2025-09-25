@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router';
 import type { DashboardNode } from '~~/shared/types/dashboard';
 
 const { navigateToNodeInfo, navigateToPeers } = useHelpers();
-const { formatSecondsToDays } = useTextFormatting();
+const { formatSecondsToDays, formatBytes } = useTextFormatting();
 const bitcoinStore = useBitcoin();
 
 const { dashboardNode, nodeIndex } = defineProps<{
@@ -157,6 +157,7 @@ function getStatusLightColor() {
     </template>
 
     <!-- Node Loading -->
+
     <div class="p-4 pb-2" v-if="!dashboardNode">
       <div class="text-center text-slate-500 max-w-sm mx-auto my-24 px-4">
         <div class="mb-3">
@@ -168,6 +169,7 @@ function getStatusLightColor() {
 
     <template v-else>
       <!-- Blockchain Info -->
+
       <div class="p-4 pb-0">
         <div class="flex justify-between items-center">
           <h2 class="text-lg">Blockchain Info</h2>
@@ -270,6 +272,7 @@ function getStatusLightColor() {
       <divider class="my-4"></divider>
 
       <!-- Peers -->
+
       <div class="p-4 pb-2 pt-0">
         <div class="text-lg mb-2">Peers</div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
@@ -281,16 +284,19 @@ function getStatusLightColor() {
               <div class="text-gray-500">Connections</div>
             </div>
           </card-tile>
-          <card-tile-button @click="navigateToPeers(nodeIndex)">
-            <div>
-              <UIcon name="solar:global-outline" size="22"></UIcon>
+          <card-tile>
+            <div class="p-2 px-4">
+              <div class="text-2xl">
+                {{ formatBytes(dashboardNode.netTotals.totalbytessent) }}
+              </div>
+              <div class="text-gray-500">Bytes Sent</div>
             </div>
-            <div>Connection Map</div>
-          </card-tile-button>
+          </card-tile>
         </div>
       </div>
 
       <!-- In/Out + Progress Bar -->
+
       <div class="px-4 pb-4">
         <div class="grid grid-cols-1 gap-2">
           <card-tile>
