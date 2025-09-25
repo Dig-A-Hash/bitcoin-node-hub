@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { SelectMenuItem } from '@nuxt/ui';
 import type { ApiResponse } from '../../shared/types/apiResponse';
 
 const { selectedPeer, nodeIndex } = defineProps<{
@@ -13,6 +14,8 @@ const { formatTimestamp, formatBytes } = useTextFormatting();
 const emit = defineEmits<{
   (e: 'update'): void;
 }>();
+
+const selectedBanLengthSeconds = ref(3600);
 
 async function banPeer() {
   showModal.value = true;
@@ -46,6 +49,37 @@ async function confirmBan() {
     showModal.value = false;
   }
 }
+
+const banLengthItems = ref<SelectMenuItem[]>([
+  {
+    label: '1 Hour',
+    id: 3600,
+  },
+  {
+    label: '12 Hours',
+    id: 43200,
+  },
+  {
+    label: '1 Day',
+    id: 86400,
+  },
+  {
+    label: '1 Week',
+    id: 604800,
+  },
+  {
+    label: '1 Month',
+    id: 2628000,
+  },
+  {
+    label: '1 Year',
+    id: 31536000,
+  },
+  {
+    label: '100 Years',
+    id: 3155760000,
+  },
+]);
 </script>
 <template>
   <div class="">
@@ -282,8 +316,17 @@ async function confirmBan() {
           </card-subtle>
         </template>
       </UTabs>
-      <div class="mt-4 text-right">
-        <UButton color="error" @click="banPeer">Ban Peer</UButton>
+      <div class="mt-4 text-right flex">
+        <USelectMenu
+          v-model="selectedBanLengthSeconds"
+          value-key="id"
+          label-key="label"
+          :items="banLengthItems"
+          class="w-full mr-2"
+        />
+        <UButton color="error" @click="banPeer" class="w-30 justify-center"
+          >Ban Peer</UButton
+        >
       </div>
       <UModal v-model:open="showModal">
         <template #content>
