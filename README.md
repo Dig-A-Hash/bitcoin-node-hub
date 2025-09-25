@@ -4,13 +4,18 @@ Bitcoin Node Hub is used to monitor and view information about multiple Bitcoin 
 
 ## Dashboard
 
-The dashboard shows important metrics for each node.
-![Bitcoin Node Hub](https://i.imgur.com/AdkTv08.png)
+The dashboard shows important status metrics for each node.
+![Bitcoin Node Hub Dashboard](https://i.imgur.com/PPF6n59.png)
 
 ## Peer Mapping
 
-Zoom in, navigate, and map peer geographic locations.
-![Bitcoin Node Hub](https://i.imgur.com/AMYf2LE.png)
+Zoom in, navigate, and map, peer geographic locations. Ban peers from here too.
+![Bitcoin Node Hub Peer Mapping](https://i.imgur.com/g6XCHXD.png)
+
+## Mempool Visualizer
+
+The mempool visualizer helps us understand what is in the mempool at a glance, or drill down into individual transactions. The spam, fees, and sizes of data in the mempool are also shown here.
+![Bitcoin Node Hub Mempool Visualizer](https://i.imgur.com/uN5lKwL.png)
 
 ## Data Flow
 
