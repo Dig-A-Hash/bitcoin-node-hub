@@ -3,6 +3,7 @@ import type { ApiResponse } from '../../shared/types/apiResponse';
 import type { DashboardNode } from '../../shared/types/dashboard';
 
 const bitcoinStore = useBitcoin();
+const appSettings = useAppSettings();
 
 const apiResponse = ref<(DashboardNode | null)[]>([]);
 const isLoading = ref(false);
@@ -141,14 +142,14 @@ onMounted(async () => {
       if (bitcoinStore.nodeNames[i]?.isIbd) return; // Skip IBD nodes
       fetchDashboard(i);
     });
-  }, 30000); // Fetch every 30 seconds
+  }, appSettings.dashboard.POLL_INTERVAL);
 
   intervalSlowRef.value = setInterval(() => {
     Array.from({ length: bitcoinStore.nodeCount }, (_, i) => {
       if (!bitcoinStore.nodeNames[i]?.isIbd) return; // Skip non-IBD nodes
       fetchDashboard(i);
     });
-  }, 600000); // Fetch every 10 minutes
+  }, appSettings.dashboard.POLL_INTERVAL_IBD);
 });
 
 onUnmounted(() => {

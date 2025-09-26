@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue';
+
 const route = useRoute();
 const nodeIndex = parseInt(route.params.i?.toString() || '');
-const { appConfiguration } = useConfiguration();
+const appSettings = useAppSettings();
 
 // Color constants for transaction blocks
 const LOW_FEE_COLOR = 'bg-blue-600';
@@ -10,9 +12,6 @@ const MEDIUM_HIGH_FEE_COLOR = 'bg-yellow-400';
 const HIGH_FEE_COLOR = 'bg-orange-500';
 const textDataSize = 'text-2xl';
 const isLoading = ref(false);
-
-import { ref, watch } from 'vue';
-import type { VisualizerData } from '~~/shared/types/bitcoinCore';
 
 const visualizerData = ref<VisualizerData>({
   transactions: [],
@@ -116,7 +115,7 @@ onMounted(async () => {
     isLoading.value = true;
     getVisualizerInterval.value = setInterval(
       fetchVisualizerData,
-      appConfiguration.mempoolVisualizer.POLL_INTERVAL
+      appSettings.mempool.POLL_INTERVAL
     );
 
     await fetchVisualizerData(); // Fetch data first to get block timestamp
