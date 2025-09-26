@@ -32,5 +32,10 @@ export function useTextFormatting() {
     return `${roundedDays} ${roundedDays === 1 ? 'Day' : 'Days'}`;
   };
 
-  return { formatBytes, formatTimestamp, formatSecondsToDays };
+  // Format an ip by removing the port.
+  const formatIpNoPort = (ip: string) => {
+    return ip.split(':')[0];
+  };
+
+  return { formatBytes, formatTimestamp, formatSecondsToDays, formatIpNoPort };
 }

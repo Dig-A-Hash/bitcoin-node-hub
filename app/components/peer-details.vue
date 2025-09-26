@@ -9,13 +9,14 @@ const { selectedPeer, nodeIndex } = defineProps<{
 
 const showModal = ref(false);
 const toast = useToast();
-const { formatTimestamp, formatBytes } = useTextFormatting();
+const { formatTimestamp, formatBytes, formatIpNoPort } = useTextFormatting();
 
 const emit = defineEmits<{
   (e: 'update'): void;
 }>();
 
 const selectedBanLengthSeconds = ref(3600);
+const isBanLoading = ref(false);
 
 async function banPeer() {
   showModal.value = true;
@@ -23,20 +24,29 @@ async function banPeer() {
 
 async function confirmBan() {
   try {
+    isBanLoading.value = true;
+    const ipOnly = formatIpNoPort(selectedPeer.addr);
     const response = await $fetch<ApiResponse>('/api/setBan', {
       method: 'POST',
-      body: { nodeIndex, ipAddress: selectedPeer.addr.split(':')[0] },
+      body: {
+        nodeIndex,
+        ipAddress: ipOnly,
+        banTime: selectedBanLengthSeconds.value,
+      },
       parseResponse: JSON.parse,
     });
-    toast.add({
-      id: 'ban-success',
-      title: 'Peer Banned',
-      description: `Successfully banned peer at ${
-        selectedPeer.addr.split(':')[0]
-      }`,
-      color: 'success',
-    });
-    emit('update');
+
+    setTimeout(() => {
+      toast.add({
+        id: 'ban-success',
+        title: 'Peer Banned',
+        description: `Successfully banned peer at ${ipOnly}`,
+        color: 'success',
+      });
+      emit('update');
+      showModal.value = false;
+      isBanLoading.value = true;
+    }, 1000);
   } catch (error) {
     console.error(`Error:`, error);
     toast.add({
@@ -45,12 +55,17 @@ async function confirmBan() {
       description: 'Failed to ban peer',
       color: 'error',
     });
-  } finally {
     showModal.value = false;
+    isBanLoading.value = true;
   }
 }
 
-const banLengthItems = ref<SelectMenuItem[]>([
+interface BanLengthItem {
+  id: number;
+  label: string;
+}
+
+const banLengthItems = ref<BanLengthItem[]>([
   {
     label: '1 Hour',
     id: 3600,
@@ -133,6 +148,8 @@ const banLengthItems = ref<SelectMenuItem[]>([
         </div>
       </div>
 
+      <divider class="mb-4"></divider>
+
       <UTabs
         :items="[
           { label: 'Network', slot: 'network' },
@@ -141,7 +158,7 @@ const banLengthItems = ref<SelectMenuItem[]>([
           { label: 'Geo', slot: 'geo' },
         ]"
         :color="selectedPeer.inbound ? 'warning' : 'secondary'"
-        class="mt-4"
+        class=""
       >
         <template #network>
           <card-subtle>
@@ -316,24 +333,34 @@ const banLengthItems = ref<SelectMenuItem[]>([
           </card-subtle>
         </template>
       </UTabs>
-      <div class="mt-4 text-right flex">
-        <USelectMenu
-          v-model="selectedBanLengthSeconds"
-          value-key="id"
-          label-key="label"
-          :items="banLengthItems"
-          class="w-full mr-2"
-        />
-        <UButton color="error" @click="banPeer" class="w-30 justify-center"
-          >Ban Peer</UButton
-        >
+
+      <div class="mt-4">
+        <div class="text-sm ml-2 text-slate-500 mb-1">Select Ban Length</div>
+        <UFieldGroup class="w-full">
+          <USelectMenu
+            v-model="selectedBanLengthSeconds"
+            value-key="id"
+            label-key="label"
+            :items="banLengthItems"
+            class="w-full"
+          />
+          <UButton color="error" @click="banPeer" class="w-30 justify-center"
+            >Ban Peer</UButton
+          >
+        </UFieldGroup>
       </div>
       <UModal v-model:open="showModal">
         <template #content>
           <div class="p-4">
             <h3 class="text-lg font-semibold">Confirm Ban</h3>
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-              Are you sure you want to ban the peer at {{ selectedPeer.addr }}?
+              Are you sure you want to ban the peer at
+              {{ formatIpNoPort(selectedPeer.addr) }} for
+              {{
+                banLengthItems.find(
+                  (item: BanLengthItem) => item?.id === selectedBanLengthSeconds
+                )?.label || 'unknown duration'
+              }}?
             </p>
             <div class="mt-4 flex justify-end gap-2">
               <UButton
@@ -342,7 +369,9 @@ const banLengthItems = ref<SelectMenuItem[]>([
                 @click="showModal = false"
                 >Cancel</UButton
               >
-              <UButton color="error" @click="confirmBan">Ban Peer</UButton>
+              <UButton color="error" @click="confirmBan" :loading="isBanLoading"
+                >Ban Peer</UButton
+              >
             </div>
           </div>
         </template>

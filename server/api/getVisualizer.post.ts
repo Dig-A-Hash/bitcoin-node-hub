@@ -52,11 +52,9 @@ export default defineEventHandler(
   async (event): Promise<ApiResponse<VisualizerData>> => {
     try {
       // Parse the request body for the node index
-      const { nodeIndex } = z
-        .object({
-          nodeIndex: z.number().min(0).max(AppConstants.MAX_NODES),
-        })
-        .parse(await readBody(event));
+      const { nodeIndex } = AppConstants.BASE_VALIDATION_SCHEMA.parse(
+        await readBody(event)
+      );
 
       // Get Bitcoin node credentials
       const bitcoinNodeCredentials = getBitcoinNodeCredentials();
