@@ -39,6 +39,7 @@ const combinedPeerData = ref<(PeerInfo & { geo?: GeoIpResponse })[]>([]);
 const isDrawerOpen = ref(false);
 const selectedPeer = ref<(PeerInfo & { geo?: GeoIpResponse }) | null>(null);
 const mapHeight = ref(100);
+const avgPingTime = ref(-1);
 
 const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
   {
@@ -146,6 +147,18 @@ async function fetchPeers() {
       await fetchGeoLocations(response.data);
       await nextTick();
       renderMap();
+
+      // Calculate average ping time
+      const pingTimes = response.data
+        .map((item) => item.pingtime)
+        .filter(
+          (pingtime): pingtime is number =>
+            pingtime !== undefined && pingtime !== null
+        );
+      avgPingTime.value =
+        pingTimes.length > 0
+          ? pingTimes.reduce((sum, time) => sum + time, 0) / pingTimes.length
+          : 0;
     } else {
       console.error('API response missing success or data:', response);
     }
@@ -456,9 +469,25 @@ onUnmounted(() => {
 
 <template>
   <div class="mt-4 mx-4">
-    <h1 class="text-xl mb-2 text-white">
-      {{ bitcoinStore.nodeNames[nodeIndex]?.name }} Peers
-    </h1>
+    <div class="flex justify-between items-center">
+      <h1 class="text-xl mb-2 text-white">
+        {{ bitcoinStore.nodeNames[nodeIndex]?.name }} Peers
+      </h1>
+      <div class="text-sm">
+        Avg. ping
+        <UBadge
+          color="neutral"
+          variant="subtle"
+          class="ml-1"
+          v-if="avgPingTime !== -1"
+        >
+          {{ avgPingTime.toFixed(2) }} ms</UBadge
+        >
+        <UBadge color="neutral" variant="subtle" class="ml-1" v-else>
+          Loading</UBadge
+        >
+      </div>
+    </div>
 
     <div class="flex space-x-4 mt-4">
       <card-subtle class="w-110">
