@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue';
 import type { TableColumn, TableRow } from '@nuxt/ui';
-import type { ApiResponse } from '../../../shared/types/apiResponse';
-import type { PeerInfo } from '../../../shared/types/bitcoinCore';
-import type { GeoIpResponse } from '../../../shared/types/geoip';
 import { Map, View, Overlay } from 'ol';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
@@ -37,9 +33,10 @@ let tooltip: Overlay | null = null;
 const isLoading = ref(true);
 const combinedPeerData = ref<(PeerInfo & { geo?: GeoIpResponse })[]>([]);
 const isDrawerOpen = ref(false);
-const selectedPeer = ref<(PeerInfo & { geo?: GeoIpResponse }) | null>(null);
 const mapHeight = ref(100);
 const avgPingTime = ref(-1);
+const selectedPeer = ref<(PeerInfo & { geo?: GeoIpResponse }) | null>(null);
+const rowSelection = ref<Record<number, boolean>>({});
 
 const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
   {
@@ -101,6 +98,14 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
               onClick: () => {
                 selectedPeer.value = row.original;
                 isDrawerOpen.value = true;
+
+                // Clear previous selections
+                Object.keys(rowSelection.value).forEach((key) => {
+                  rowSelection.value[Number(key)] = false;
+                });
+                // select row
+                row.toggleSelected(true);
+                selectedPeer.value = row.original;
               },
             },
             () => ''
@@ -410,16 +415,14 @@ function renderMap() {
   }
 }
 
-const rowSelection = ref<Record<number, boolean>>({});
-
 function onSelect(row: TableRow<PeerInfo & { geo?: GeoIpResponse }>) {
   // Clear previous selections
   Object.keys(rowSelection.value).forEach((key) => {
     rowSelection.value[Number(key)] = false;
   });
+  // select row
   row.toggleSelected(true);
   selectedPeer.value = row.original;
-  //isDrawerOpen.value = true;
 
   // Zoom to the selected peer's location with zoom-out first
   if (map && row.original.geo) {
