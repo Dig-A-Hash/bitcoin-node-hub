@@ -26,7 +26,7 @@ async function confirmBan() {
   try {
     isBanLoading.value = true;
     const ipOnly = formatIpNoPort(selectedPeer.addr);
-    const response = await $fetch<ApiResponse>('/api/setBan', {
+    const response = await $fetch<ApiResponse>('/api/ban/setBan', {
       method: 'POST',
       body: {
         nodeIndex,
