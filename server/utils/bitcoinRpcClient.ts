@@ -1,19 +1,4 @@
 import axios from 'axios';
-import type {
-  BanEntry,
-  BlockchainInfo,
-  NetworkInfo,
-  MempoolInfo,
-  MiningInfo,
-  NetTotals,
-  MemoryInfo,
-  Difficulty,
-  IndexInfo,
-  MempoolEntry,
-  PeerInfo,
-  Transaction,
-  RawMempoolVerbose,
-} from '~~/shared/types/bitcoinCore';
 import { AxiosInstance } from 'axios';
 
 /**
@@ -48,7 +33,12 @@ export class BitcoinRpcClient {
      * @returns A promise resolving to true if the bans were successfully cleared.
      */
     clearBanned: async (): Promise<boolean> => {
-      return this.rpc<boolean>('clearbanned');
+      try {
+        this.rpc<boolean>('clearbanned');
+        return true;
+      } catch {
+        return false;
+      }
     },
     /**
      * Retrieves the list of banned IP addresses or subnets.
@@ -63,7 +53,12 @@ export class BitcoinRpcClient {
      * @returns A promise resolving to true if the ban was successfully removed.
      */
     removeBan: async (ip: string): Promise<boolean> => {
-      return this.rpc<boolean>('setban', [ip, 'remove']);
+      try {
+        this.rpc<void>('setban', [ip, 'remove']);
+        return true;
+      } catch {
+        return false;
+      }
     },
     /**
      * Bans a specified IP address or subnet from connecting to the node.
@@ -77,7 +72,12 @@ export class BitcoinRpcClient {
       banTime: number = 0,
       absolute: boolean = false
     ): Promise<boolean> => {
-      return this.rpc<boolean>('setban', [ip, 'add', banTime, absolute]);
+      try {
+        this.rpc<void>('setban', [ip, 'add', banTime, absolute]);
+        return true;
+      } catch {
+        return false;
+      }
     },
   };
 
@@ -292,5 +292,25 @@ export class BitcoinRpcClient {
    */
   async customCall<T>(method: string, params: any[] = []): Promise<T> {
     return this.rpc<T>(method, params);
+  }
+
+  /**
+   * Makes a batch JSON-RPC call to the Bitcoin node.
+   * @template T - The expected type of the RPC response result for each request.
+   * @param requests - An array of RPC requests, each with jsonrpc, id, method, and params.
+   * @returns A promise resolving to an array of RPC responses.
+   * @throws Error if the batch response is not an array.
+   */
+  async batchRpc<T>(
+    requests: { jsonrpc: string; id: string; method: string; params: any[] }[]
+  ): Promise<RpcResponse<T>[]> {
+    const response = await this.axiosInstance.post<RpcResponse<T>[]>(
+      '',
+      requests
+    );
+    if (!Array.isArray(response.data)) {
+      throw new Error('Batch RPC response is not an array');
+    }
+    return response.data;
   }
 }

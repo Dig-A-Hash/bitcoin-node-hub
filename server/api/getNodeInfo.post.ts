@@ -1,8 +1,3 @@
-import { ApiResponse } from '~~/shared/types/apiResponse';
-import { sendErrorResponse } from '~~/server/utils/errors';
-import type { NodeInfo } from '~~/shared/types/nodeInfo';
-import { BitcoinRpcClient } from '~~/server/utils/bitcoinRpcClient';
-
 export default defineEventHandler(
   async (event): Promise<ApiResponse<NodeInfo>> => {
     try {

@@ -303,9 +303,10 @@ export interface Block {
  */
 export interface BanEntry {
   address: string;
-  banned_until: number;
   ban_created: number;
-  ban_reason: string;
+  banned_until: number;
+  ban_duration: number;
+  time_remaining: string;
 }
 
 export interface MempoolEntry {

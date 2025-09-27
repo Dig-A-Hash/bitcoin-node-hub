@@ -1,5 +1,3 @@
-import type { NetTotals } from './bitcoinCore';
-
 export interface DashboardNode {
   nodeIndex: number;
   name: string;

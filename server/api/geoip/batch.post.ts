@@ -1,8 +1,6 @@
 import { open, GeoIpDbName } from 'geolite2-redist';
 import maxmind, { CityResponse } from 'maxmind';
-import { StatusError } from '~~/server/utils/errors';
 import { HttpStatusCode } from 'axios';
-import { GeoIpResponse } from '~~/shared/types/geoip';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);

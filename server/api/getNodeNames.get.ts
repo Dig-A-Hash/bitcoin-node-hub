@@ -1,7 +1,3 @@
-import { ApiResponse } from '~~/shared/types/apiResponse';
-import { sendErrorResponse } from '../utils/errors';
-import { NodeName } from '~~/shared/types/nodeName';
-
 export default defineEventHandler(
   async (event): Promise<ApiResponse<NodeName[]>> => {
     try {

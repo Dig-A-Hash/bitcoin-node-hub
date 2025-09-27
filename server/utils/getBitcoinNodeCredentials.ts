@@ -1,6 +1,4 @@
 import credentialsFromFile from '~~/server/utils/bitcoinNodeCredentials.json';
-import { BitcoinNodeCredential } from '~~/shared/types/bitcoinCore';
-import { StatusError } from '~~/server/utils/errors';
 import { HttpStatusCode } from 'axios';
 
 export function getBitcoinNodeCredentials(

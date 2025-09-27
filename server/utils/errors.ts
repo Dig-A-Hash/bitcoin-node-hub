@@ -1,6 +1,4 @@
 import { HttpStatusCode } from 'axios';
-import { z } from 'zod';
-import { ApiResponse } from '~~/shared/types/apiResponse';
 import { setResponseStatus, H3Event } from 'h3';
 
 export class StatusError extends Error {
