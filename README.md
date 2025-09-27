@@ -1,6 +1,6 @@
 # Bitcoin Node Hub
 
-Bitcoin Node Hub is used to monitor and view information about multiple Bitcoin nodes. This is particularly useful for managing low-power, headless nodes that lack a dedicated monitor. Key features include real-time blockchain info, connection details including a detailed global map of peers, sync status, transaction querying and more.
+Bitcoin Node Hub is used to monitor and view information about multiple Bitcoin nodes. This is particularly useful for managing low-power, headless nodes that lack a dedicated monitor. Key features include real-time blockchain info, connection details including a geographic map of peers, sync status, ban management, Mempool visualization, spam tacking, transaction querying and more.
 
 ## Dashboard
 
@@ -9,7 +9,7 @@ The dashboard shows important status metrics for each node.
 
 ## Peer Mapping
 
-Zoom in, navigate, and map, peer geographic locations. Ban peers from here too.
+Zoom in, navigate, and map, peer geographic locations. Ban peers from here as needed.
 ![Bitcoin Node Hub Peer Mapping](https://i.imgur.com/g6XCHXD.png)
 
 ## Mempool Visualizer
@@ -19,12 +19,12 @@ The mempool visualizer helps us understand what is in the mempool at a glance, o
 
 ## Data Flow
 
-This app runs an API that will make clear text http calls to the bitcoin-cli running on a Bitcoin Node.
+This app runs a server-side API that will make clear text http calls to the bitcoin-cli running on a Bitcoin Node.
 
-Important: Connecting to Bitcoin Nodes over the internet is very insecure due to making clear-text http API calls to each node. Consider modern encryption for connecting to nodes securely, like:
+**Important**: Connecting to Bitcoin Nodes over the internet is very insecure due to making clear-text http API calls to each node. This will expose the credentials to your node unless you encrypt the traffic yourself. Bitcoin Nodes do not support SSL/TLS at the server. Therefore other forms of modern encryption for connecting to nodes securely, like:
 
 - Stunnel or nginx as a reverse proxy to wrap RPC in TLS.
-- SSH tunneling for secure local access.
+- SSH tunneling for secure access.
 - Third-party tools like RPC over Tor.
 - VPN
 
@@ -36,13 +36,17 @@ Use this software at your own risk. The developers and contributors are not liab
 
 ## Dependencies
 
-This app requires [Node.js](https://nodejs.org/en), the latest version is always recommended. At least 1 Bitcoin Node is required. This app is only tested with [Bitcoin Knots](https://bitcoinknots.org/) because we do not want to see spam on the Bitcoin Network, but any modern Bitcoin Node should work.
+This app requires [Node.js](https://nodejs.org/en), the latest version is always recommended. At least 1 Bitcoin Node is required. This app is only tested with [Bitcoin Knots](https://bitcoinknots.org/) for now, but any modern Bitcoin Node should work.
 
 ## Installation
 
 Clone this repo.
 
-First, use the CLI to change to the newly cloned directory, and pre-load the [GeoLite2](https://github.com/GitSquared/node-geolite2-redist) IP Address Geographic Location Data using the following command from the project root.
+First, use the CLI to change to the newly cloned directory and install the project dependencies using the Node Package Manager ([NPM](https://www.npmjs.com/)).
+
+`npm install`
+
+Next, use the CLI to change to the newly cloned directory, and pre-load the [GeoLite2](https://github.com/GitSquared/node-geolite2-redist) IP Address Geographic Location Data using the following command from the project root.
 
 `npm run preload-geolite2`
 
