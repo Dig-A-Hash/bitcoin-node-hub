@@ -85,7 +85,7 @@ watch(
         class: 'p-3 my-1',
         to: '/about',
         tooltip: {
-          text: 'Settings',
+          text: 'About',
         },
         onSelect: () => {
           isMobileMenuOpen.value = false; // Close the slideover
