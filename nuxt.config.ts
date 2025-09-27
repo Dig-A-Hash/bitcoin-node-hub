@@ -16,10 +16,37 @@ export default defineNuxtConfig({
     port: 3500,
   },
   nitro: {
-    logLevel: 'debug',
+    imports: {
+      presets: [
+        {
+          from: 'zod',
+          imports: [{ name: '*', as: 'z' }],
+        },
+      ],
+    },
   },
   imports: {
     dirs: ['shared/types'], // Ensure types are scanned
+    presets: [
+      {
+        from: 'zod',
+        imports: [
+          {
+            name: '*',
+            as: 'z',
+          },
+        ],
+      },
+      {
+        from: 'axios',
+        imports: [
+          {
+            name: 'HttpStatusCode',
+            as: 'HttpStatusCode',
+          },
+        ],
+      },
+    ],
   },
   colorMode: {
     preference: 'system', // Default to system preference (light/dark)
