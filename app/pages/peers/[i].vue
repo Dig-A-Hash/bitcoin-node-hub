@@ -472,25 +472,36 @@ onUnmounted(() => {
 
 <template>
   <div class="mt-4 mx-4">
-    <div class="flex justify-between items-center">
-      <h1 class="text-xl mb-2 text-white">
-        {{ bitcoinStore.nodeNames[nodeIndex]?.name }} Peers
-      </h1>
-      <div class="text-sm">
-        Avg. ping
+    <h1 class="text-xl mb-4 text-white flex justify-between items-center">
+      <span> Peers </span>
+
+      <span class="flex items-center">
+        <span class="text-sm">
+          Avg. ping
+          <UBadge
+            color="neutral"
+            variant="subtle"
+            class="ml-1"
+            v-if="avgPingTime !== -1"
+          >
+            {{ avgPingTime.toFixed(2) }} ms</UBadge
+          >
+          <UBadge color="neutral" variant="subtle" class="ml-1" v-else>
+            Loading
+          </UBadge>
+        </span>
+
         <UBadge
-          color="neutral"
+          size="xl"
+          class="ml-4"
+          color="primary"
+          icon="material-symbols:network-node"
           variant="subtle"
-          class="ml-1"
-          v-if="avgPingTime !== -1"
         >
-          {{ avgPingTime.toFixed(2) }} ms</UBadge
-        >
-        <UBadge color="neutral" variant="subtle" class="ml-1" v-else>
-          Loading</UBadge
-        >
-      </div>
-    </div>
+          {{ bitcoinStore.nodeNames[nodeIndex]?.name }}
+        </UBadge>
+      </span>
+    </h1>
 
     <div class="flex space-x-4 mt-4">
       <card-subtle class="w-110">
