@@ -45,7 +45,6 @@ function resetPolling() {
             help="Polling interval for the dashboard."
           >
             <UInputNumber
-              size="xl"
               :min="5"
               :max="9999"
               v-model="dashPollInterval"
@@ -60,7 +59,6 @@ function resetPolling() {
             help="Polling interval for the dashboard when the node is conducting the Initial Block Download (IBD)."
           >
             <UInputNumber
-              size="xl"
               :min="60"
               :max="9999"
               v-model="dashPollIntervalIbd"
@@ -75,7 +73,6 @@ function resetPolling() {
             help="Polling interval for the mempool visualizer."
           >
             <UInputNumber
-              size="xl"
               :min="5"
               :max="9999"
               v-model="mempoolPollInterval"

@@ -1,30 +1,11 @@
 <script setup lang="ts">
-import type { ApiResponse } from '~~/shared/types/apiResponse';
-import type { NodeInfo } from '~~/shared/types/nodeInfo';
-
 const nodeInfo = ref<NodeInfo>();
 const bitcoinStore = useBitcoin();
 const route = useRoute();
 const nodeIndex = parseInt(route.params.i?.toString() || '');
 const isLoading = ref(false);
 const isError = ref(false);
-
 const textDataSize = 'text-2xl';
-
-// Format bytes to human-readable units
-const formatBytes = (bytes: number) => {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let value = bytes;
-  let unitIndex = 0;
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex++;
-  }
-  return `${value.toFixed(2)} ${units[unitIndex]}`;
-};
-
-// Format timestamp to readable date
-const formatTimestamp = (millis: number) => new Date(millis).toLocaleString();
 
 // Fetch data
 async function fetchNodeInfo() {
@@ -53,8 +34,17 @@ onMounted(async () => {
 <template>
   <UContainer class="mt-4">
     <div v-if="nodeInfo && !isLoading">
-      <h1 class="text-xl mb-4 text-white">
-        {{ bitcoinStore.nodeNames[nodeIndex]?.name }} Mempool
+      <h1 class="text-xl mb-4 text-white flex justify-between items-center">
+        <span>Mempool </span>
+        <UBadge
+          size="xl"
+          class="ml-4"
+          color="primary"
+          icon="material-symbols:network-node"
+          variant="subtle"
+        >
+          {{ bitcoinStore.nodeNames[nodeIndex]?.name }}
+        </UBadge>
       </h1>
       <div class="space-y-4 mb-4">
         <block-visualizer-html></block-visualizer-html>

@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { ApiResponse } from '../../shared/types/apiResponse';
-import type { DashboardNode } from '../../shared/types/dashboard';
-
 const bitcoinStore = useBitcoin();
 const appSettings = useAppSettings();
 
