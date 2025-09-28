@@ -8,6 +8,10 @@ const bitcoinNodes = computed(() => bitcoinStore.nodeNames); // Reactively sync 
 // State to control mobile menu drawer
 const isMobileMenuOpen = ref(false);
 
+const disabledStates = computed(() =>
+  bitcoinNodes.value.map((node) => node.isIbd)
+);
+
 // Navigation items
 const navItems = ref<NavigationMenuItem[]>([
   {
@@ -27,27 +31,43 @@ const navItems = ref<NavigationMenuItem[]>([
 // Watch bitcoinNodes and append to navItems
 watch(
   bitcoinNodes,
-  (newNodes) => {
+  (newNodes: NavigationMenuItem[]) => {
     const nodeItems: NavigationMenuItem[] = newNodes.map((node, index) => ({
       label: node.name, // Assuming node has a 'name' property
       class: 'p-3 my-1',
       tooltip: {
         text: node.name,
       },
-      disabled: computed(() => bitcoinNodes.value[index]?.isIbd), // Use computed to keep disabled reactive
+      disabled: disabledStates.value[index],
       slot: 'components' as const,
       children: [
         {
           label: 'General Info',
           to: `/node-info/${index}`,
+          onSelect: () => {
+            isMobileMenuOpen.value = false;
+          },
         },
         {
           label: 'Mempool',
           to: `/mempool/${index}`,
+          onSelect: () => {
+            isMobileMenuOpen.value = false;
+          },
         },
         {
           label: 'Peers',
           to: `/peers/${index}`,
+          onSelect: () => {
+            isMobileMenuOpen.value = false;
+          },
+        },
+        {
+          label: 'Bans',
+          to: `/ban/${index}`,
+          onSelect: () => {
+            isMobileMenuOpen.value = false;
+          },
         },
       ],
       onSelect: () => {
@@ -56,10 +76,12 @@ watch(
       },
     }));
 
-    navItems.value = [
-      navItems.value[0], // Keep Dashboard
-      ...nodeItems,
-    ];
+    if (navItems.value[0]) {
+      navItems.value = [
+        navItems.value[0], // Keep Dashboard
+        ...nodeItems,
+      ];
+    }
 
     if (
       !navItems.value.find((item) => item.label === 'Settings') &&
@@ -99,7 +121,7 @@ watch(
             ? 'material-symbols:keyboard-double-arrow-right'
             : 'material-symbols:keyboard-double-arrow-left'
         ) as unknown as string,
-        class: 'p-3 my-1 hidden sm:flex',
+        class: 'p-3 my-1 hidden lg:flex',
         tooltip: {
           text: 'Expand menu',
         },
@@ -199,7 +221,19 @@ const toggleDrawer = () => {
             orientation="vertical"
             color="secondary"
             class="w-full"
-          />
+          >
+            <template #components-leading="{ index }">
+              <UIcon
+                size="17"
+                name="material-symbols:network-node"
+                :class="`${
+                  bitcoinNodes[index - 1]?.isIbd
+                    ? 'dark:text-yellow-500 light:text-amber-700'
+                    : 'dark:text-green-500 light:text-green-700'
+                }`"
+              ></UIcon>
+            </template>
+          </UNavigationMenu>
         </template>
       </USlideover>
 

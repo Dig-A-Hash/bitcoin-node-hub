@@ -74,6 +74,11 @@ watch(
         label: 'Peers',
         to: `/peers/${nodeIndex}`,
       });
+
+      navItems.value.push({
+        label: 'Bans',
+        to: `/ban/${nodeIndex}`,
+      });
     }
   },
   { immediate: true, deep: true }
@@ -172,7 +177,7 @@ function getStatusLightColor() {
 
       <div class="p-4 pb-0">
         <div class="flex justify-between items-center">
-          <h2 class="text-lg">Blockchain Info</h2>
+          <h2 class="text-lg">Status</h2>
           <UBadge color="neutral" variant="subtle">{{
             dashboardNode.blockchainInfo.chain === 'main'
               ? 'Mainnet'
