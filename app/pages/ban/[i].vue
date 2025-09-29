@@ -1,12 +1,50 @@
 <script setup lang="ts">
+import type { TableColumn } from '@nuxt/ui';
+
 const banEntries = ref<BanEntry[]>();
 const bitcoinStore = useBitcoin();
+const { formatTimestamp, formatSecondsToDays } = useTextFormatting();
 const route = useRoute();
 const nodeIndex = parseInt(route.params.i?.toString() || '');
 const isLoading = ref(false);
 const isError = ref(false);
 
 const textDataSize = 'text-2xl';
+
+const columns: TableColumn<BanEntry>[] = [
+  {
+    accessorKey: 'address',
+    header: 'Address',
+  },
+  {
+    accessorKey: 'ban_created',
+    header: 'Created',
+    cell: ({ row }) => {
+      return formatTimestamp(row.original.ban_created);
+    },
+  },
+  {
+    accessorKey: 'banned_until',
+    header: 'End Date',
+    cell: ({ row }) => {
+      return formatTimestamp(row.original.banned_until);
+    },
+  },
+  {
+    accessorKey: 'ban_duration',
+    header: 'Duration',
+    cell: ({ row }) => {
+      return formatSecondsToDays(row.original.ban_duration);
+    },
+  },
+  {
+    accessorKey: 'time_remaining',
+    header: 'Time Remaining',
+    cell: ({ row }) => {
+      return formatSecondsToDays(parseInt(row.original.time_remaining));
+    },
+  },
+];
 
 // Fetch data
 async function fetchNodeInfo() {
@@ -50,13 +88,20 @@ onMounted(async () => {
     </h1>
     <div v-if="banEntries && !isLoading" class="space-y-4 mb-4">
       <card-subtle class=" ">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2">
-          <card-tile>
-            <div class="p-4">
-              <p :class="textDataSize">Test</p>
-              <p class="text-gray-500">Test</p>
-            </div>
-          </card-tile>
+        <div class="grid grid-cols-1 gap-2 p-2">
+          <div class="p-4">
+            <UTable
+              ref="table"
+              sticky
+              :data="banEntries"
+              class="flex-1"
+              :columns="columns"
+              :ui="{
+                tr: 'data-[selected=true]:bg-elevated/100 data-[selected=true]:border-l-2 border-b-1 data-[selected=true]:border-l-green-500',
+                td: 'light:text-gray-700',
+              }"
+            />
+          </div>
         </div>
       </card-subtle>
     </div>
