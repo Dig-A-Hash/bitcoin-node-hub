@@ -40,12 +40,12 @@ async function confirmBan() {
       toast.add({
         id: 'ban-success',
         title: 'Peer Banned',
-        description: `Successfully banned peer at ${ipOnly}`,
+        description: `Successfully banned peer at ${ipOnly} for ${selectedBanLength}.`,
         color: 'success',
       });
       emit('update');
       showModal.value = false;
-      isBanLoading.value = true;
+      isBanLoading.value = false;
     }, 1000);
   } catch (error) {
     console.error(`Error:`, error);
@@ -56,7 +56,7 @@ async function confirmBan() {
       color: 'error',
     });
     showModal.value = false;
-    isBanLoading.value = true;
+    isBanLoading.value = false;
   }
 }
 
@@ -95,6 +95,13 @@ const banLengthItems = ref<BanLengthItem[]>([
     id: 3155760000,
   },
 ]);
+
+const selectedBanLength = computed(
+  () =>
+    banLengthItems.value.find(
+      (item: BanLengthItem) => item?.id === selectedBanLengthSeconds.value
+    )?.label || 'unknown duration'
+);
 </script>
 <template>
   <div class="">
@@ -356,11 +363,7 @@ const banLengthItems = ref<BanLengthItem[]>([
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
               Are you sure you want to ban the peer at
               {{ formatIpNoPort(selectedPeer.addr) }} for
-              {{
-                banLengthItems.find(
-                  (item: BanLengthItem) => item?.id === selectedBanLengthSeconds
-                )?.label || 'unknown duration'
-              }}?
+              {{ selectedBanLength }}?
             </p>
             <div class="mt-4 flex justify-end gap-2">
               <UButton
