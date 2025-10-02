@@ -3,4 +3,5 @@ export interface NodeName {
   name: string;
   isTxIndex: boolean;
   isIbd?: boolean;
+  isError: boolean;
 }

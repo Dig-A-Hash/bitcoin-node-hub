@@ -26,7 +26,7 @@ const visualizerData = ref<VisualizerData>({
 });
 
 // Timer logic
-const BLOCK_TIME_SECONDS = 600; // 10 minutes
+const BLOCK_TIME_SECONDS = 600; // 600 sec = 10 minutes
 const timeRemaining = ref(BLOCK_TIME_SECONDS);
 const lastBlockHeight = ref(0);
 const progressValue = ref(0);
@@ -38,6 +38,10 @@ function updateBlockTimer() {
     0,
     ((BLOCK_TIME_SECONDS - timeRemaining.value) / BLOCK_TIME_SECONDS) * 100
   );
+
+  if (progressValue.value >= 100) {
+    timeRemaining.value = timeRemaining.value + 30;
+  }
 }
 
 function resetBlockTimer(blockTime?: number) {
@@ -142,12 +146,12 @@ onBeforeUnmount(() => {
     <card-subtle class="col-span-2">
       <template #header>
         <div class="ml-4 my-2 text-lg">
-          Block {{ visualizerData.blocks[0]?.height }}
+          Block {{ visualizerData.blocks[0]?.height }} Transactions
         </div>
       </template>
-      <div class="p-4 h-94">
+      <div class="p-4 h-84">
         <div
-          class="flex flex-row flex-wrap space-x-1 space-y-1 overflow-y-auto w-full max-h-87"
+          class="flex flex-row flex-wrap space-x-1 space-y-1 overflow-y-auto w-full max-h-78"
           v-if="!isLoading"
         >
           <template v-for="tx in visualizerData.transactions" :key="tx.txid">
@@ -179,15 +183,14 @@ onBeforeUnmount(() => {
       </div>
       <template #footer>
         <div class="p-4">
-          Showing
+          Showing top
           <UBadge color="neutral" variant="subtle" size="xl">{{
             visualizerData.transactions.length
           }}</UBadge>
-          of
-          <UBadge color="neutral" variant="subtle" size="xl">{{
-            visualizerData.totalTxCount
-          }}</UBadge>
-          transactions
+          txs ordered by fee.
+          <UTooltip text="Next Block Timer">
+            <UProgress v-model="progressValue" color="warning" class="mt-4" />
+          </UTooltip>
         </div>
       </template>
     </card-subtle>
@@ -195,8 +198,20 @@ onBeforeUnmount(() => {
     <!-- Sidebar for Low-Priority Categories and Timer -->
     <div class="space-y-2">
       <card-subtle>
-        <!-- Low Fee -->
+        <!-- Total -->
 
+        <div class="p-4">
+          <div :class="textDataSize" class="flex justify-between items-center">
+            <div>
+              {{ visualizerData.totalTxCount }}
+            </div>
+          </div>
+          <div class="text-gray-500">Total Transactions</div>
+        </div>
+      </card-subtle>
+
+      <!-- Low Fee -->
+      <card-subtle>
         <div class="p-4">
           <div :class="textDataSize" class="flex justify-between items-center">
             <div>
@@ -258,7 +273,7 @@ onBeforeUnmount(() => {
         </div>
       </card-subtle>
 
-      <!-- Ordinals -->
+      <!-- RBF -->
 
       <card-subtle>
         <div class="p-4">
@@ -276,13 +291,13 @@ onBeforeUnmount(() => {
               kB
             </span>
           </div>
-          <div class="text-gray-500">RBF/Large Chained Deps.</div>
+          <div class="text-gray-500">RBF/Long Chain Deps.</div>
         </div>
       </card-subtle>
 
       <!-- Timer Card -->
 
-      <card-subtle>
+      <!-- <card-subtle>
         <div class="p-4">
           <p :class="textDataSize">
             {{ formattedTime }}
@@ -295,7 +310,7 @@ onBeforeUnmount(() => {
             class="mt-2"
           />
         </div>
-      </card-subtle>
+      </card-subtle> -->
     </div>
   </div>
 </template>

@@ -8,7 +8,7 @@ export const useBitcoin = defineStore('bitcoin', () => {
   const cachedNodes = ref<DashboardNode[]>([]);
 
   async function fetchNodeNames() {
-    const response = await $fetch<ApiResponse<NodeName[]>>(
+    const response = await $fetch<ApiResponse<(NodeName | null)[]>>(
       '/api/getNodeNames',
       {
         method: 'GET',
@@ -16,8 +16,10 @@ export const useBitcoin = defineStore('bitcoin', () => {
     );
 
     if (response.success && response.data) {
-      // Wrap each node in reactive to ensure properties like isIbd are reactive
-      nodeNames.value = response.data.map((node) => reactive(node));
+      // Wrap each non-null node in reactive to ensure properties like isIbd are reactive
+      nodeNames.value = response.data
+        .filter((node): node is NodeName => node !== null)
+        .map((node) => reactive(node));
       nodeCount.value = nodeNames.value.length;
     }
   }

@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui';
 import { computed } from 'vue';
-import { useRouter } from 'vue-router';
 import type { DashboardNode } from '~~/shared/types/dashboard';
 
-const { navigateToNodeInfo, navigateToPeers } = useHelpers();
 const { formatSecondsToDays, formatBytes } = useTextFormatting();
 const bitcoinStore = useBitcoin();
 
-const { dashboardNode, nodeIndex } = defineProps<{
+const { dashboardNode, nodeIndex, isLoading } = defineProps<{
   dashboardNode: DashboardNode | null;
   nodeIndex: number;
+  isLoading: boolean;
 }>();
 
 const bytesInGB: number = 1073741824; // 1 GB = 2^30 bytes
@@ -18,9 +17,11 @@ const bitcoinNodes = computed(() => bitcoinStore.nodeNames); // Reactively sync 
 
 // Compute status reactively
 const status = computed(() => {
-  if (bitcoinNodes.value[nodeIndex]?.isIbd) {
+  if (bitcoinNodes.value[nodeIndex]?.isError) {
+    return 'Offline';
+  } else if (bitcoinNodes.value[nodeIndex]?.isIbd) {
     return 'Syncing';
-  } else if (!dashboardNode) {
+  } else if (!dashboardNode && isLoading) {
     return 'Loading';
   } else {
     return 'Online';
@@ -89,7 +90,8 @@ function getStatusColor() {
     case 'Syncing':
     case 'Loading':
       return 'bg-yellow-500/15';
-
+    case 'Offline':
+      return 'bg-red-500/15';
     default:
       return 'bg-green-500/15';
   }
@@ -100,7 +102,8 @@ function getStatusLightColor() {
     case 'Syncing':
     case 'Loading':
       return 'warning';
-
+    case 'Offline':
+      return 'error';
     default:
       return 'success';
   }
@@ -132,7 +135,12 @@ function getStatusLightColor() {
           </div>
         </div>
         <div class="px-4 truncate w-full">
-          {{ dashboardNode ? dashboardNode.name : `Node ${nodeIndex}` }}
+          <!-- Get the node name from the dash query, but if that has not arrived or is null, then get the node name from the bitcoinStore. -->
+          {{
+            dashboardNode
+              ? dashboardNode.name
+              : bitcoinStore.nodeNames[nodeIndex]?.name
+          }}
         </div>
         <div class="border-l dark:border-slate-800 light:border-slate-500 flex">
           <UDropdownMenu :items="navItems">
@@ -162,8 +170,7 @@ function getStatusLightColor() {
     </template>
 
     <!-- Node Loading -->
-
-    <div class="p-4 pb-2" v-if="!dashboardNode">
+    <div class="p-4 pb-2" v-if="isLoading && !dashboardNode">
       <div class="text-center text-slate-500 max-w-sm mx-auto my-24 px-4">
         <div class="mb-3">
           <UProgress color="warning"></UProgress>
@@ -172,7 +179,7 @@ function getStatusLightColor() {
       </div>
     </div>
 
-    <template v-else>
+    <template v-else-if="!isLoading && dashboardNode">
       <!-- Blockchain Info -->
 
       <div class="p-4 pb-0">
@@ -336,5 +343,17 @@ function getStatusLightColor() {
         </div>
       </div>
     </template>
+    <div v-else class="mt-16">
+      <div class="flex justify-center">
+        <UIcon
+          size="64"
+          name="material-symbols:network-node"
+          class="dark:text-red-500/50 light:text-red-600/60"
+        ></UIcon>
+      </div>
+      <div class="text-center text-sm dark:text-slate-500 mt-2">
+        This node is offline or not responding.
+      </div>
+    </div>
   </card-subtle>
 </template>

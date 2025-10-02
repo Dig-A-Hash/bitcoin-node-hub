@@ -35,9 +35,16 @@ function loadCachedData() {
 /**
  * Fetches dashboard data for each node and updates the apiResponse array.
  * @async
+ * @param nodeIndex - Optional specific node index to fetch
+ * @param options - Options including skipLoading to bypass loading state
  * @returns {Promise<void>}
  */
-async function fetchDashboard(nodeIndex?: number) {
+async function fetchDashboard(
+  nodeIndex?: number,
+  options: { skipLoading?: boolean } = {}
+) {
+  const { skipLoading = false } = options;
+
   if (
     !apiResponse.value ||
     apiResponse.value.length !== bitcoinStore.nodeCount
@@ -46,7 +53,9 @@ async function fetchDashboard(nodeIndex?: number) {
   }
 
   const fetchNode = async (i: number) => {
-    pendingFetches.value.add(i); // Track fetch start
+    if (!skipLoading) {
+      pendingFetches.value.add(i); // Track fetch start only if not skipping
+    }
     try {
       const response = await fetch('/api/getDashboard', {
         method: 'POST',
@@ -80,19 +89,22 @@ async function fetchDashboard(nodeIndex?: number) {
       apiResponse.value[i] = null; // Explicitly set null on error
       apiResponse.value = [...apiResponse.value]; // Trigger reactivity
     } finally {
-      pendingFetches.value.delete(i); // Remove from pending fetches
-      // Update isLoading based on pending fetches
-      isLoading.value = pendingFetches.value.size > 0;
+      if (!skipLoading) {
+        pendingFetches.value.delete(i); // Remove from pending fetches only if not skipping
+        // Update isLoading based on pending fetches
+        isLoading.value = pendingFetches.value.size > 0;
+      }
     }
   };
 
   if (nodeIndex !== undefined) {
     await fetchNode(nodeIndex);
   } else {
-    isLoading.value = true;
-    Array.from({ length: bitcoinStore.nodeCount }, (_, i) => {
-      fetchNode(i);
-    });
+    // For fetching all: Await all promises for proper completion handling
+    const promises = Array.from({ length: bitcoinStore.nodeCount }, (_, i) =>
+      fetchNode(i)
+    );
+    await Promise.all(promises);
   }
 }
 
@@ -106,7 +118,10 @@ watch(
     apiResponse.value = new Array(bitcoinStore.nodeCount).fill(null); // Reinitialize array
     pendingFetches.value.clear(); // Clear pending fetches
     loadCachedData(); // Load cached data after node count change
-    await fetchDashboard();
+    if (bitcoinStore.nodeCount > 0) {
+      isLoading.value = true; // Set loading upfront for full reload
+    }
+    await fetchDashboard(); // Now properly awaits all
   },
   { immediate: false }
 );
@@ -127,24 +142,31 @@ onMounted(async () => {
     apiResponse.value = new Array(bitcoinStore.nodeCount).fill(null);
   }
   loadCachedData(); // Load cached data for IBD nodes
-  // Immediately fetch data for non-IBD nodes
-  Array.from({ length: bitcoinStore.nodeCount }, (_, i) => {
-    if (!bitcoinStore.nodeNames[i]?.isIbd) {
-      fetchDashboard(i);
-    }
+
+  // Immediately fetch data for non-IBD nodes (default: skipLoading=false)
+  const nonIbdIndices = Array.from(
+    { length: bitcoinStore.nodeCount },
+    (_, i) => i
+  ).filter((i) => !bitcoinStore.nodeNames[i]?.isIbd);
+  nonIbdIndices.forEach((i) => {
+    fetchDashboard(i);
   });
 
+  // After starting initial fetches (all adds are sync), set isLoading based on pending
+  isLoading.value = pendingFetches.value.size > 0;
+
+  // Set up intervals with skipLoading=true to avoid spinners on updates
   intervalRef.value = setInterval(() => {
     Array.from({ length: bitcoinStore.nodeCount }, (_, i) => {
       if (bitcoinStore.nodeNames[i]?.isIbd) return; // Skip IBD nodes
-      fetchDashboard(i);
+      fetchDashboard(i, { skipLoading: true });
     });
   }, appSettings.dashboard.POLL_INTERVAL);
 
   intervalSlowRef.value = setInterval(() => {
     Array.from({ length: bitcoinStore.nodeCount }, (_, i) => {
       if (!bitcoinStore.nodeNames[i]?.isIbd) return; // Skip non-IBD nodes
-      fetchDashboard(i);
+      fetchDashboard(i, { skipLoading: true });
     });
   }, appSettings.dashboard.POLL_INTERVAL_IBD);
 });
@@ -172,7 +194,7 @@ onUnmounted(() => {
       <template v-for="(node, index) in apiResponse" :key="index">
         <!-- Render a card only if node is not undefined -->
         <card-dash
-          v-if="node !== undefined"
+          :is-loading="isLoading"
           :dashboard-node="node"
           :node-index="index"
         ></card-dash>

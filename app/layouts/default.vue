@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui';
 
+/**
+ * node.host will not exist if there is a problem
+ */
+
 const bitcoinStore = useBitcoin();
 const isCollapsed = ref(false);
 const bitcoinNodes = computed(() => bitcoinStore.nodeNames); // Reactively sync with nodeNames
@@ -9,7 +13,7 @@ const bitcoinNodes = computed(() => bitcoinStore.nodeNames); // Reactively sync 
 const isMobileMenuOpen = ref(false);
 
 const disabledStates = computed(() =>
-  bitcoinNodes.value.map((node) => node.isIbd)
+  bitcoinNodes.value.map((node) => (!node.isError ? node.isIbd : true))
 );
 
 // Navigation items
@@ -33,7 +37,7 @@ watch(
   bitcoinNodes,
   (newNodes: NavigationMenuItem[]) => {
     const nodeItems: NavigationMenuItem[] = newNodes.map((node, index) => ({
-      label: node.name, // Assuming node has a 'name' property
+      label: node.name || `Node ${index}`, // Assuming node has a 'name' property
       class: 'p-3 my-1',
       tooltip: {
         text: node.name,
@@ -138,6 +142,18 @@ watch(
 const toggleDrawer = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value;
 };
+
+function getNodeIconColor(index: number) {
+  if (bitcoinNodes.value[index - 1]?.isError) {
+    return 'dark:text-red-500 light:text-red-700';
+  }
+
+  if (bitcoinNodes.value[index - 1]?.isIbd) {
+    return 'dark:text-yellow-500 light:text-amber-700';
+  } else {
+    return 'dark:text-green-500 light:text-green-700';
+  }
+}
 </script>
 
 <template>
@@ -171,11 +187,7 @@ const toggleDrawer = () => {
             <UIcon
               size="17"
               name="material-symbols:network-node"
-              :class="`${
-                bitcoinNodes[index - 1]?.isIbd
-                  ? 'dark:text-yellow-500 light:text-amber-700'
-                  : 'dark:text-green-500 light:text-green-700'
-              }`"
+              :class="getNodeIconColor(index)"
             ></UIcon>
           </template>
         </UNavigationMenu>
