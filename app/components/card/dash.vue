@@ -343,7 +343,7 @@ function getStatusLightColor() {
         </div>
       </div>
     </template>
-    <div v-else class="mt-16">
+    <div v-else class="my-16">
       <div class="flex justify-center">
         <UIcon
           size="64"
