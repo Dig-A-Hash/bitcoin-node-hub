@@ -341,7 +341,7 @@ export interface VisualizerData {
   totalTxCount: number;
   lowPriorityCategories: {
     lowFee: LowPriorityCategory;
-    dust: LowPriorityCategory;
+    //  dust: LowPriorityCategory;
     ordinals: LowPriorityCategory;
     anomalous: LowPriorityCategory;
   };
