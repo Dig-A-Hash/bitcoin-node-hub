@@ -108,7 +108,7 @@ async function getAndUpdateMempoolCache(
     const cacheKey = `${nodeIndex}_${blockCount}`;
     categoriesCache.delete(cacheKey);
 
-    // Cold start: Fetch full verbose mempool (single RPC call) - simdjson integration in BitcoinRpcClient speeds up parse here
+    // Cold start: Fetch full verbose mempool (single RPC call)
     const mempool: RawMempoolVerbose = await rpcClient.mempool.getRawMempool(
       true
     );
