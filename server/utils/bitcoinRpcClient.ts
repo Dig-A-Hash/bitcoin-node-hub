@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { AxiosInstance } from 'axios';
+import { destr } from 'destr';
 
 /**
  * Interface defining the structure of a Bitcoin RPC response.
@@ -267,19 +268,36 @@ export class BitcoinRpcClient {
     params: any[] = [],
     id = `nuxt-rpc-${method}-${Date.now()}`
   ): Promise<T> {
-    const response = await this.axiosInstance.post<RpcResponse<T>>('', {
-      jsonrpc: '1.0',
-      id,
-      method,
-      params,
-    });
-    if (response.data.error) {
-      throw new Error(response.data.error.message || 'RPC call failed');
+    const response = await this.axiosInstance.post(
+      '',
+      {
+        jsonrpc: '1.0',
+        id,
+        method,
+        params,
+      },
+      {
+        responseType: 'text', // Get raw string for fast manual parse
+        transformResponse: [], // Disable Axios auto-parse
+      }
+    );
+
+    const parsedData = destr(response.data);
+
+    if (parsedData === null) {
+      throw new Error('JSON parse failed');
     }
-    if (response.data.result === null) {
+
+    const data = parsedData as RpcResponse<T>;
+    if (data.error) {
+      throw new Error(data.error.message || 'RPC call failed');
+    }
+
+    if (data.result === null) {
       throw new Error('RPC call returned null result');
     }
-    return response.data.result;
+
+    return data.result;
   }
 
   /**
