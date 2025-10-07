@@ -6,8 +6,11 @@ interface CachedMempool {
 
 // Define caches outside the handler (global to the server process)
 const mempoolCache = new Map<number, CachedMempool>();
-const dustMinOutCache = new Map<string, number>(); // txid -> min output in satoshis (for dust checks)
-const blocksCache = new Map<number, Block[]>(); // height -> recent blocks (stable per height)
+const blocksCache = new Map<number, Block[]>();
+const categoriesCache = new Map<
+  string,
+  { [key in TransactionCategory]: Transaction[] }
+>();
 
 // Define low-priority transaction categories
 interface LowPriorityCategory {
@@ -18,12 +21,7 @@ interface LowPriorityCategory {
 }
 
 // Define the category keys as a type
-type TransactionCategory =
-  | 'highPriority'
-  | 'lowFee'
-  | 'dust'
-  | 'ordinals'
-  | 'anomalous';
+type TransactionCategory = 'highPriority' | 'lowFee' | 'ordinals' | 'anomalous';
 
 interface BitcoinRpcError {
   code: number;
@@ -36,15 +34,10 @@ interface BitcoinRpcResponse<T> {
   error?: BitcoinRpcError | null;
 }
 
-interface VOut {
-  value: number;
-  scriptPubKey: {
-    type: string;
-  };
-}
+interface GetMempoolEntryResult extends MempoolTransactionInfo {}
 
-interface GetRawTransactionResult {
-  vout: VOut[];
+interface RawMempoolVerbose {
+  [txid: string]: MempoolTransactionInfo;
 }
 
 /**
@@ -90,11 +83,12 @@ function categorizeTransaction(
 
 /**
  * Gets and updates the mempool cache for the given node and block count.
- * Fetches the latest mempool if cache is invalid.
+ * On cold starts (new height), fetches full verbose mempool.
+ * On warm starts, fetches txids and verbose details for new txs only.
  * @param nodeIndex - The Bitcoin node index.
  * @param blockCount - The current block count.
  * @param rpcClient - The Bitcoin RPC client.
- * @returns An object with the cached mempool, current mempool, and new txids.
+ * @returns An object with the cached mempool, current txids, new txids, and removed txids.
  */
 async function getAndUpdateMempoolCache(
   nodeIndex: number,
@@ -102,153 +96,119 @@ async function getAndUpdateMempoolCache(
   rpcClient: BitcoinRpcClient
 ) {
   let cachedMempool = mempoolCache.get(nodeIndex);
-  if (!cachedMempool || cachedMempool.height !== blockCount) {
-    // New block or no cache: reset
+  const isNewHeight = !cachedMempool || cachedMempool.height !== blockCount;
+  if (isNewHeight) {
+    // New block: reset caches
     cachedMempool = {
       height: blockCount,
       txs: new Map<string, MempoolTransactionInfo>(),
     };
     mempoolCache.set(nodeIndex, cachedMempool);
-  }
+    // Also reset categories for new height
+    const cacheKey = `${nodeIndex}_${blockCount}`;
+    categoriesCache.delete(cacheKey);
 
-  // Fetch current mempool (lightweight, gets us fresh txs)
-  const mempool: RawMempoolVerbose = await rpcClient.mempool.getRawMempool(
-    true
-  );
+    // Cold start: Fetch full verbose mempool (single RPC call) - simdjson integration in BitcoinRpcClient speeds up parse here
+    const mempool: RawMempoolVerbose = await rpcClient.mempool.getRawMempool(
+      true
+    );
 
-  // Identify new txids (not in cache)
-  const currentTxids = new Set(Object.keys(mempool));
-  const cachedTxids = new Set(cachedMempool.txs.keys());
-  const newTxids = [...currentTxids].filter((txid) => !cachedTxids.has(txid));
-
-  // Update cache: Add new txs, remove old ones
-  for (const txid of newTxids) {
-    cachedMempool.txs.set(txid, mempool[txid]);
-  }
-  for (const txid of cachedTxids) {
-    if (!currentTxids.has(txid)) {
-      cachedMempool.txs.delete(txid);
-      dustMinOutCache.delete(txid); // Clean up dust cache too
+    // Populate cache from full mempool
+    for (const [txid, details] of Object.entries(mempool)) {
+      cachedMempool.txs.set(txid, details);
     }
-  }
 
-  return { cachedMempool, mempool, newTxids };
+    const currentTxids = new Set(Object.keys(mempool));
+    const newTxids: string[] = [...currentTxids]; // All are new on cold start
+    const removedTxids: string[] = []; // None on cold start
+
+    return { cachedMempool, currentTxids, newTxids, removedTxids };
+  } else {
+    // Warm start: Fetch current txids (non-verbose, fast)
+    const mempoolTxids: string[] = (await rpcClient.mempool.getRawMempool(
+      false
+    )) as unknown as string[];
+
+    // Identify new and removed txids
+    const currentTxids = new Set(mempoolTxids);
+    const cachedTxids = new Set(cachedMempool?.txs.keys());
+    const newTxids = [...currentTxids].filter((txid) => !cachedTxids.has(txid));
+    const removedTxids = [...cachedTxids].filter(
+      (txid) => !currentTxids.has(txid)
+    );
+
+    // Fetch verbose details for new txs via batch getmempoolentry - simdjson in batchRpc speeds up parse
+    if (newTxids.length > 0) {
+      const batchRequests = newTxids.map((txid, index) => ({
+        jsonrpc: '1.0',
+        id: `getmempoolentry-${index}`,
+        method: 'getmempoolentry',
+        params: [txid],
+      }));
+      const responseArray: BitcoinRpcResponse<GetMempoolEntryResult>[] =
+        await rpcClient.batchRpc(batchRequests);
+
+      for (const [index, response] of responseArray.entries()) {
+        const txid = newTxids[index];
+        try {
+          if (response?.error) {
+            console.warn(
+              `Failed to fetch mempool entry for ${txid}: RPC error ${response.error.code}: ${response.error.message}`
+            );
+            continue;
+          }
+          if (!response?.result) {
+            console.warn(
+              `Invalid response for mempool entry ${txid}: No result`
+            );
+            continue;
+          }
+          cachedMempool?.txs.set(txid, response.result);
+        } catch (e: any) {
+          console.warn(
+            `Unexpected error processing mempool entry ${txid}: ${e.message}`
+          );
+        }
+      }
+    }
+
+    // Clean up removed txs
+    for (const txid of removedTxids) {
+      cachedMempool?.txs.delete(txid);
+    }
+
+    return { cachedMempool, currentTxids, newTxids, removedTxids };
+  }
 }
 
 /**
- * Processes and categorizes transactions, separating cached and new ones.
+ * Processes new transactions: categorizes them.
+ * @param newTxids - Array of new transaction IDs.
  * @param cachedMempool - The cached mempool data.
- * @param newTxids - Array of new transaction IDs.
- * @returns An object with categorized transactions.
- */
-function processCachedTransactions(
-  cachedMempool: CachedMempool,
-  newTxids: string[]
-) {
-  const categories: { [key in TransactionCategory]: Transaction[] } = {
-    highPriority: [],
-    lowFee: [],
-    dust: [],
-    ordinals: [],
-    anomalous: [],
-  };
-
-  // Process cached transactions
-  for (const [txid, details] of cachedMempool.txs) {
-    if (newTxids.includes(txid)) continue; // Skip new txs for now
-    const tx = buildTransaction(txid, details);
-    const category = categorizeTransaction(tx, details);
-    categories[category].push(tx);
-  }
-
-  return categories;
-}
-
-/**
- * Fetches and processes new transactions in batch, updating categories and dust cache.
- * @param newTxids - Array of new transaction IDs.
- * @param mempool - The current mempool data.
- * @param rpcClient - The Bitcoin RPC client.
  * @param categories - The current categories object to update.
  * @returns The number of failed transactions during processing.
  */
 async function processNewTransactions(
   newTxids: string[],
-  mempool: RawMempoolVerbose,
-  rpcClient: BitcoinRpcClient,
+  cachedMempool: CachedMempool,
   categories: { [key in TransactionCategory]: Transaction[] }
 ): Promise<number> {
   let failedTxCount = 0;
   if (newTxids.length === 0) return failedTxCount;
 
-  // Batch fetch getrawtransaction for new txids (dust checks)
-  const batchRequests = newTxids.map((txid, index) => ({
-    jsonrpc: '1.0',
-    id: `nuxt-rpc-tx-${index}`,
-    method: 'getrawtransaction',
-    params: [txid, true],
-  }));
-  const responseArray: BitcoinRpcResponse<GetRawTransactionResult>[] =
-    await rpcClient.batchRpc(batchRequests);
-
-  // Process batched responses
-  for (const [index, response] of responseArray.entries()) {
-    const txid = newTxids[index];
-    const details = mempool[txid];
+  // Categorize new txs using their details
+  for (const txid of newTxids) {
+    const details = cachedMempool.txs.get(txid);
+    if (!details) {
+      failedTxCount++;
+      continue;
+    }
     const tx = buildTransaction(txid, details);
     const category = categorizeTransaction(tx, details);
     categories[category].push(tx);
-
-    // Dust check caching
-    try {
-      if (response?.error) {
-        console.warn(
-          `Failed to fetch tx ${txid}: RPC error ${response.error.code}: ${response.error.message}`
-        );
-        failedTxCount++;
-        continue;
-      }
-      if (!response?.result?.vout) {
-        console.warn(`Invalid response for tx ${txid}: No result or vout data`);
-        failedTxCount++;
-        continue;
-      }
-      const outputs = response.result.vout;
-      const minOutSat = Math.min(...outputs.map((out: any) => out.value * 1e8));
-      dustMinOutCache.set(txid, minOutSat);
-    } catch (e: any) {
-      console.warn(`Unexpected error processing tx ${txid}: ${e.message}`);
-      failedTxCount++;
-    }
-  }
-
-  if (failedTxCount > 0) {
-    console.info(
-      `Dust fetching completed: ${failedTxCount}/${newTxids.length} new transactions failed`
-    );
   }
 
   return failedTxCount;
-}
-
-/**
- * Performs dust checks for all transactions and updates the dust category.
- * @param mempool - The current mempool data.
- * @param dustThreshold - The calculated dust threshold.
- * @param dustCategory - The dust category array to update.
- */
-function performDustChecks(
-  mempool: RawMempoolVerbose,
-  dustThreshold: number,
-  dustCategory: Transaction[]
-) {
-  for (const [txid, details] of Object.entries(mempool)) {
-    const minOutSat = dustMinOutCache.get(txid);
-    if (minOutSat !== undefined && minOutSat < dustThreshold) {
-      const tx = buildTransaction(txid, details);
-      dustCategory.push(tx);
-    }
-  }
 }
 
 /**
@@ -324,13 +284,13 @@ async function getRecentBlocks(
 /**
  * Handles POST requests to fetch and process Bitcoin mempool data for visualization.
  *
- * Retrieves mempool transactions from a specified Bitcoin node, categorizes them (high-priority, low-fee, dust, ordinals, anomalous),
+ * Retrieves mempool transactions from a specified Bitcoin node, categorizes them (high-priority, low-fee, ordinals, anomalous),
  * and fetches recent blocks. Uses in-memory caching to reduce node load:
- * - Caches mempool transaction details per node and block height, reusing data for known transactions and processing only new ones.
- * - Caches dust check results (minimum output satoshis) per transaction to avoid redundant `getrawtransaction` calls.
- * - Caches recent blocks per block height to avoid refetching until a new block is mined.
+ * - Caches mempool transaction details per node and block height, fetching full verbose on cold starts and deltas on warm starts.
+ * - Caches categorized transactions per block height to apply deltas incrementally.
+ * - Caches recent blocks per block height.
  *
- * Ensures fresh data on every request by fetching the latest mempool, while minimizing RPC calls through caching.
+ * Ensures fresh data on every request by fetching txids (warm) or full mempool (cold), while minimizing RPC calls through caching.
  *
  * @param event - The incoming HTTP event containing the request body with `nodeIndex`.
  * @returns A promise resolving to an `ApiResponse<VisualizerData>` containing categorized transactions, recent blocks,
@@ -351,24 +311,38 @@ export default defineEventHandler(
       // Always fetch block count first (lightweight) to check/invalidate cache
       const blockCount = await rpcClient.blockchain.getBlockCount();
 
-      // Get or update mempool cache
-      const { cachedMempool, mempool, newTxids } =
+      // Get or update mempool cache (txids and new details)
+      const { cachedMempool, currentTxids, newTxids, removedTxids } =
         await getAndUpdateMempoolCache(nodeIndex, blockCount, rpcClient);
-      const totalTxCount = Object.keys(mempool).length;
+      const totalTxCount = currentTxids.size;
 
-      // Initialize categories from cached transactions
-      let categories = processCachedTransactions(cachedMempool, newTxids);
-
-      // Fetch network info for dust threshold
-      const networkInfo = await rpcClient.network.getNetworkInfo();
-      const minRelayFee = networkInfo.relayfee * 1e8;
-      const dustThreshold = 0.5 * minRelayFee;
+      // Load or initialize categories, apply removals
+      const cacheKey = `${nodeIndex}_${blockCount}`;
+      let categories: { [key in TransactionCategory]: Transaction[] };
+      const removedSet = new Set(removedTxids);
+      if (categoriesCache.has(cacheKey)) {
+        categories = categoriesCache.get(cacheKey)!;
+        // Filter out removed txs from all categories
+        for (const catKey in categories) {
+          const cat = catKey as TransactionCategory;
+          categories[cat] = categories[cat].filter(
+            (tx) => !removedSet.has(tx.txid)
+          );
+        }
+      } else {
+        categories = {
+          highPriority: [],
+          lowFee: [],
+          ordinals: [],
+          anomalous: [],
+        };
+      }
 
       // Process new transactions and update categories
-      await processNewTransactions(newTxids, mempool, rpcClient, categories);
+      await processNewTransactions(newTxids, cachedMempool!, categories);
 
-      // Perform dust checks for all transactions
-      performDustChecks(mempool, dustThreshold, categories.dust);
+      // Cache the updated categories
+      categoriesCache.set(cacheKey, { ...categories });
 
       // Sort high-priority txs
       const sortedHighPriority = sortHighPriorityTransactions(
@@ -378,7 +352,6 @@ export default defineEventHandler(
       // Summarize low-priority categories
       const lowPriorityCategories = {
         lowFee: summarizeCategory(categories.lowFee),
-        dust: summarizeCategory(categories.dust),
         ordinals: summarizeCategory(categories.ordinals),
         anomalous: summarizeCategory(categories.anomalous),
       };
