@@ -19,7 +19,7 @@ const visualizerData = ref<VisualizerData>({
   totalTxCount: 0,
   lowPriorityCategories: {
     lowFee: { count: 0, totalVsize: 0, avgFeePerVbyte: 0 },
-    dust: { count: 0, totalVsize: 0, avgFeePerVbyte: 0 },
+    // dust: { count: 0, totalVsize: 0, avgFeePerVbyte: 0 },
     ordinals: { count: 0, totalVsize: 0, avgFeePerVbyte: 0 },
     anomalous: { count: 0, totalVsize: 0, avgFeePerVbyte: 0 },
   },
@@ -103,26 +103,16 @@ function openTxDetails(txid: string) {
   window.open(`https://mempool.space/tx/${txid}`, '_blank');
 }
 
-const formattedTime = computed(() => {
-  const minutes = Math.floor(timeRemaining.value / 60);
-  const seconds = (timeRemaining.value % 60).toString().padStart(2, '0');
-
-  if (minutes < 0) {
-    return `- ${minutes * -1 - 1}:${parseInt(seconds) * -1}`;
-  } else {
-    return `${minutes}:${seconds}`;
-  }
-});
-
 onMounted(async () => {
   try {
     isLoading.value = true;
+    await fetchVisualizerData(); // Fetch data first to get block timestamp
+
     getVisualizerInterval.value = setInterval(
       fetchVisualizerData,
       appSettings.mempool.POLL_INTERVAL
     );
 
-    await fetchVisualizerData(); // Fetch data first to get block timestamp
     blockTimerInterval.value = setInterval(() => {
       timeRemaining.value = Math.max(-Infinity, timeRemaining.value - 1);
       updateBlockTimer();
@@ -230,7 +220,7 @@ onBeforeUnmount(() => {
         </div>
       </card-subtle>
 
-      <!-- Dust -->
+      <!-- Dust
 
       <card-subtle>
         <div class="p-4">
@@ -249,7 +239,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="text-gray-500">Dust</div>
         </div>
-      </card-subtle>
+      </card-subtle> -->
 
       <!-- Ordinals -->
 
