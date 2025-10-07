@@ -18,6 +18,7 @@
     "@types/node": "^24.5.2",
     "@types/p5": "^1.7.6",
     "axios": "^1.11.0",
+    "destr": "^2.0.5",
     "geolite2-redist": "^3.1.1",
     "material-symbols": "^0.35.0",
     "nuxt": "^4.1.2",
