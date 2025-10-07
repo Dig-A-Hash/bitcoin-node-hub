@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { uptime } from 'process';
+
 const bitcoinStore = useBitcoin();
 const appSettings = useAppSettings();
+const { formatSecondsToDays } = useTextFormatting();
 
 const apiResponse = ref<(DashboardNode | null)[]>([]);
 const isLoading = ref(false);
@@ -179,8 +182,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Template renders a container with a loading state or a grid of dashboard cards -->
-  <UContainer class="mt-4">
+  <div class="mt-4 mx-4">
     <div
       v-if="
         isLoading &&
@@ -190,15 +192,85 @@ onUnmounted(() => {
     >
       Loading...
     </div>
-    <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <template v-for="(node, index) in apiResponse" :key="index">
-        <!-- Render a card only if node is not undefined -->
-        <card-dash
-          :is-loading="isLoading"
-          :dashboard-node="node"
-          :node-index="index"
-        ></card-dash>
-      </template>
-    </div>
-  </UContainer>
+    <template v-else>
+      <div
+        class="grid grid-cols-1 sm:grid-cols-4 gap-4"
+        :class="`${
+          apiResponse.length === 2
+            ? 'w-full max-w-(--ui-container) mx-auto px-4 sm:px-6 lg:px-8'
+            : ''
+        } `"
+        v-if="apiResponse.length > 1"
+      >
+        <card-subtle class="p-4">
+          <div class="text-2xl">
+            {{
+              formatSecondsToDays(
+                apiResponse.reduce(
+                  (acc, item) => acc + (item ? item?.upTime : 0),
+                  0
+                )
+              )
+            }}
+          </div>
+          <div class="text-gray-500">Combined Up-Time</div>
+        </card-subtle>
+        <card-subtle class="p-4">
+          <div class="text-2xl">
+            {{
+              apiResponse.reduce(
+                (acc, item) => acc + (item ? item?.networkInfo.connections : 0),
+                0
+              )
+            }}
+          </div>
+          <div class="text-gray-500">Total Peers</div>
+        </card-subtle>
+        <card-subtle class="p-4">
+          <div class="text-2xl">
+            {{
+              apiResponse.reduce(
+                (acc, item) =>
+                  acc + (item ? item?.networkInfo.connections_in : 0),
+                0
+              )
+            }}
+          </div>
+          <div class="text-gray-500">Incoming</div>
+        </card-subtle>
+        <card-subtle class="p-4">
+          <div class="text-2xl">
+            {{
+              apiResponse.reduce(
+                (acc, item) =>
+                  acc + (item ? item?.networkInfo.connections_out : 0),
+                0
+              )
+            }}
+          </div>
+          <div class="text-gray-500">Outgoing</div>
+        </card-subtle>
+      </div>
+      <div
+        class="grid grid-cols-1 gap-4 mt-4"
+        :class="` 
+          ${apiResponse.length > 1 ? 'sm:grid-cols-2 ' : ''} 
+          ${apiResponse.length > 2 ? 'xl:grid-cols-3 ' : ''}
+          ${
+            apiResponse.length === 2
+              ? 'w-full max-w-(--ui-container) mx-auto px-4 sm:px-6 lg:px-8 '
+              : ''
+          }`"
+      >
+        <template v-for="(node, index) in apiResponse" :key="index">
+          <card-dash
+            :is-loading="isLoading"
+            :dashboard-node="node"
+            :node-index="index"
+            :class="`${apiResponse.length === 1 ? 'w-md mx-auto' : ''}`"
+          ></card-dash>
+        </template>
+      </div>
+    </template>
+  </div>
 </template>

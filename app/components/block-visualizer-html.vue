@@ -136,7 +136,7 @@ onBeforeUnmount(() => {
     <card-subtle class="col-span-2">
       <template #header>
         <div class="ml-4 my-2 text-lg">
-          Block {{ visualizerData.blocks[0]?.height }} Transactions
+          Block {{ visualizerData.blocks[0]?.height }}
         </div>
       </template>
       <div class="p-4 h-84">
