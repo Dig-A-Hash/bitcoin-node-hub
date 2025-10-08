@@ -1,10 +1,18 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import pkgJson from '~~/package.json';
+</script>
 
 <template>
   <div class="mt-4 max-w-sm mx-auto">
     <div class="text-xl mb-4 text-center">About the Bitcoin Node Hub</div>
     <card-subtle>
       <div class="p-4">
+        <UFormField
+          class="mb-6"
+          label="Version Info"
+          :help="`${pkgJson.description} v ${pkgJson.version}`"
+        >
+        </UFormField>
         <UFormField
           class="mb-6"
           label="GitHub"
