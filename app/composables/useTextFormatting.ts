@@ -34,7 +34,8 @@ export function useTextFormatting() {
 
   // Format an ip by removing the port.
   const formatIpNoPort = (ip: string) => {
-    return ip.split(':')[0];
+    const x = ip.split('/')[0];
+    return x?.split(':')[0];
   };
 
   return { formatBytes, formatTimestamp, formatSecondsToDays, formatIpNoPort };
