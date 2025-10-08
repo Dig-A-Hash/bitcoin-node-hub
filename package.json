@@ -1,8 +1,9 @@
 {
-  "name": "nuxt-app",
+  "name": "bitcoin-node-hub",
+  "description": "Bitcoin Node Hub",
   "type": "module",
   "private": true,
-  "version": "0.1.7",
+  "version": "1.0.0",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -12,16 +13,17 @@
     "preload-geolite2": "node -e \"import('geolite2-redist').then(geolite => geolite.downloadDbs())\""
   },
   "dependencies": {
+    "@iconify-json/bitcoin-icons": "^1.2.4",
+    "@iconify-json/solar": "^1.2.4",
     "@maxmind/geoip2-node": "^6.1.0",
-    "@nuxt/ui": "^4.0.0",
+    "@nuxt/ui": "^4.0.1",
     "@pinia/nuxt": "^0.11.2",
     "@types/node": "^24.5.2",
-    "@types/p5": "^1.7.6",
     "axios": "^1.11.0",
     "destr": "^2.0.5",
     "geolite2-redist": "^3.1.1",
     "material-symbols": "^0.35.0",
-    "nuxt": "^4.1.2",
+    "nuxt": "^4.1.3",
     "ol": "^10.6.1",
     "pinia": "^3.0.3",
     "pinia-plugin-persistedstate": "^4.5.0",
@@ -30,8 +32,5 @@
     "vue-router": "^4.5.1",
     "zod": "^4.1.3"
   },
-  "devDependencies": {
-    "@iconify-json/bitcoin-icons": "^1.2.4",
-    "@iconify-json/solar": "^1.2.4"
-  }
+  "devDependencies": {}
 }

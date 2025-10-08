@@ -114,3 +114,25 @@ rpcallowip=192.168.1.666/32
 Start the dev server in a new terminal window using.
 
 `npm run dev`
+
+## Package List
+
+### Base Framework
+
+- [Axios](https://github.com/axios/axios)
+- [destr](https://github.com/unjs/destr)
+- [iconify](https://github.com/iconify/icon-sets)
+- [Nuxt](https://github.com/nuxt/nuxt)
+- [Nuxt UI](https://github.com/nuxt/ui)
+- [Pinia](https://github.com/vuejs/pinia)
+- [pinia-persisted-state](https://codeberg.org/praz/pinia-plugin-persistedstate/)
+- [TypeScript](https://github.com/microsoft/TypeScript)
+- [vue](https://github.com/vuejs/core)
+- [vue-router](https://github.com/vuejs/router)
+- [zod](https://github.com/colinhacks/zod)
+
+### Mapping
+
+- [MaxMind GeoIP2 Node.js API](https://github.com/maxmind/GeoIP2-node)
+- [node-geolite2-redist](https://github.com/GitSquared/node-geolite2-redist)
+- [OpenLayers (ol)](https://github.com/openlayers/openlayers)
