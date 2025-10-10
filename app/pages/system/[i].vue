@@ -38,7 +38,7 @@ onMounted(async () => {
 <template>
   <UContainer class="mt-4">
     <h1 class="text-xl mb-4 text-white flex justify-between items-center">
-      <span> General Info </span>
+      <span> System Info </span>
       <UBadge
         size="xl"
         class="ml-4"
@@ -113,9 +113,27 @@ onMounted(async () => {
             <card-tile>
               <div class="p-4">
                 <div :class="textDataSize">
-                  {{ formatTimestamp(nodeInfo.netTotals.timemillis) }}
+                  {{ nodeInfo.networkInfo.version }}
                 </div>
-                <div class="text-gray-500">Last Updated</div>
+                <div class="text-gray-500">Version</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ nodeInfo.networkInfo.protocolversion }}
+                </div>
+                <div class="text-gray-500">Protocol Version</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div class="mb-1.5">
+                  <UBadge variant="subtle" class="" color="neutral">{{
+                    nodeInfo.networkInfo.subversion
+                  }}</UBadge>
+                </div>
+                <div class="text-gray-500">Sub Version</div>
               </div>
             </card-tile>
             <card-tile>
