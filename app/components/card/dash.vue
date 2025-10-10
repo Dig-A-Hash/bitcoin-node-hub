@@ -62,8 +62,8 @@ watch(
       newNodes.length
     ) {
       navItems.value.push({
-        label: 'General Info',
-        to: `/node-info/${nodeIndex}`,
+        label: 'System Info',
+        to: `/system/${nodeIndex}`,
       });
 
       navItems.value.push({

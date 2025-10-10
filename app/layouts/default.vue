@@ -46,8 +46,8 @@ watch(
       slot: 'components' as const,
       children: [
         {
-          label: 'General Info',
-          to: `/node-info/${index}`,
+          label: 'System Info',
+          to: `/system/${index}`,
           onSelect: () => {
             isMobileMenuOpen.value = false;
           },
