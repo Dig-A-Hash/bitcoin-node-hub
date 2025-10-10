@@ -45,26 +45,40 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
     header: 'Location',
     cell: ({ row }) => {
       const address = row.original.addr;
-      const version = row.original.version;
+      const protocolVersion = row.original.version;
+      const version = row.original.subver;
       const city = row.original.geo?.city ?? 'N/A';
       const state = row.original.geo?.state ?? 'N/A';
       const country = row.original.geo?.country ?? 'N/A';
-      return h('div', { class: 'flex flex-col cursor-pointer' }, [
-        h('div', { class: 'font-bold  truncate max-w-[150px]' }, address),
-        h('div', { class: 'truncate max-w-[150px]' }, `${city}`),
-        h('div', { class: 'truncate max-w-[150px]' }, `${state}, ${country}`),
-        h(
-          'div',
-          {
-            class: `text-xs truncate max-w-[150px] mt-0.5 ${
-              version < 70015
-                ? 'dark:text-yellow-500 light:text-red-500 font-bold'
-                : ''
-            }`,
-          },
-          `Protocol Version: ${version}`
-        ),
-      ]);
+      return h(
+        'div',
+        {
+          class: 'cursor-pointer p-4 pr-0',
+        },
+        [
+          h(
+            'div',
+            {
+              class:
+                'font-bold truncate max-w-[150px] lg:max-w-[190px] xl:max-w-[230px]',
+            },
+            version.replace('/', '').slice(0, -1)
+          ),
+          h('div', { class: 'truncate max-w-[150px]' }, `${city}`),
+          h('div', { class: 'truncate max-w-[150px]' }, `${state}, ${country}`),
+          h(
+            'div',
+            {
+              class: `text-xs truncate max-w-[150px] mt-0.5 ${
+                protocolVersion < 70015
+                  ? 'dark:text-yellow-500 light:text-red-500 font-bold'
+                  : ''
+              }`,
+            },
+            `Protocol Version: ${protocolVersion}`
+          ),
+        ]
+      );
     },
   },
   {
@@ -72,7 +86,7 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
     header: '',
     cell: ({ row }) => {
       const inBound = row.original.inbound;
-      return h('div', { class: '' }, [
+      return h('div', { class: 'mr-2' }, [
         h('div', { class: 'text-center' }, [
           h(
             UBadge,
@@ -529,7 +543,7 @@ onUnmounted(() => {
               v-model:row-selection="rowSelection"
               :ui="{
                 tr: 'data-[selected=true]:bg-elevated/100 data-[selected=true]:border-l-2 border-b-1 data-[selected=true]:border-l-green-500',
-                td: 'light:text-gray-700',
+                td: 'light:text-gray-700 p-0',
               }"
             />
           </div>
