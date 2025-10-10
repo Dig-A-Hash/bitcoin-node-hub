@@ -3,7 +3,7 @@
   "description": "Bitcoin Node Hub",
   "type": "module",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
