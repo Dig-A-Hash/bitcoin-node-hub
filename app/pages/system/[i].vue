@@ -7,6 +7,7 @@ const route = useRoute();
 const nodeIndex = parseInt(route.params.i?.toString() || '');
 const isLocalAddressesDrawerOpen = ref(false);
 const isLocalServicesDrawerOpen = ref(false);
+const isNetworksDrawerOpen = ref(false);
 const isLoading = ref(false);
 const isError = ref(false);
 const textDataSize = 'text-2xl';
@@ -50,56 +51,6 @@ onMounted(async () => {
       </UBadge>
     </h1>
     <div v-if="nodeInfo && !isLoading" class="space-y-4 mb-4">
-      <!-- Node Overview -->
-      <card-subtle class=" ">
-        <template #header>
-          <div class="flex items-center justify-between p-2 px-4">
-            <h2 class="text-lg">
-              {{ nodeInfo.name || 'Unnamed Node' }}
-            </h2>
-            <UBadge :color="nodeInfo.error ? 'error' : 'success'">
-              {{ nodeInfo.error || 'Active' }}
-            </UBadge>
-          </div>
-        </template>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2">
-          <card-tile>
-            <div class="p-4">
-              <p :class="textDataSize">{{ nodeInfo.host }}</p>
-              <p class="text-gray-500">Host</p>
-            </div>
-          </card-tile>
-          <card-tile>
-            <div class="p-4">
-              <p :class="textDataSize">
-                {{ nodeInfo.networkInfo.localaddresses[0]?.score }}
-              </p>
-              <p class="text-gray-500">Reliability Score</p>
-            </div>
-          </card-tile>
-          <card-tile>
-            <div class="p-4">
-              <p :class="textDataSize">
-                {{ nodeInfo.blockchainInfo.chain }}
-              </p>
-              <p class="text-gray-500">Chain</p>
-            </div>
-          </card-tile>
-
-          <div class="sm:col-span-2">
-            <div class="text-xl space-x-2">
-              <UBadge color="neutral" variant="subtle">Version:</UBadge>
-              <UBadge color="neutral" variant="subtle">{{
-                nodeInfo.networkInfo.subversion
-              }}</UBadge>
-              <UBadge color="neutral" variant="subtle">{{
-                nodeInfo.networkInfo.version
-              }}</UBadge>
-            </div>
-          </div>
-        </div>
-      </card-subtle>
-
       <!-- Network Info -->
 
       <div class="grid grid-cols-1 gap-4">
@@ -129,7 +80,7 @@ onMounted(async () => {
             <card-tile>
               <div class="p-4">
                 <div class="mb-1.5">
-                  <UBadge variant="subtle" class="" color="neutral">{{
+                  <UBadge variant="subtle" class="" size="lg" color="neutral">{{
                     nodeInfo.networkInfo.subversion
                   }}</UBadge>
                 </div>
@@ -139,50 +90,35 @@ onMounted(async () => {
             <card-tile>
               <div class="p-4">
                 <div :class="textDataSize">
-                  {{ formatBytes(nodeInfo.netTotals.totalbytessent) }}
+                  {{ nodeInfo.networkInfo.relayfee }}
+                  <span class="text-sm">sats/byte</span>
                 </div>
-                <div class="text-gray-500">Bytes Sent</div>
+                <div class="text-gray-500">Relay Fee</div>
               </div>
             </card-tile>
             <card-tile>
               <div class="p-4">
                 <div :class="textDataSize">
-                  {{ formatBytes(nodeInfo.netTotals.totalbytesrecv) }}
+                  {{ nodeInfo.networkInfo.incrementalfee }}
+                  <span class="text-sm">sats/byte</span>
                 </div>
-                <div class="text-gray-500">Bytes Received</div>
+                <div class="text-gray-500">Incremental Fee</div>
               </div>
             </card-tile>
 
             <card-tile>
               <div class="p-4">
                 <div :class="textDataSize">
-                  {{ nodeInfo.networkInfo.connections }}
+                  {{ nodeInfo.networkInfo.networkactive }}
                 </div>
-                <div class="text-gray-500">Connections</div>
+                <div class="text-gray-500">Active</div>
               </div>
             </card-tile>
-            <card-tile>
-              <div class="p-4">
-                <div :class="textDataSize">
-                  {{ nodeInfo.networkInfo.connections_in }}
-                </div>
-                <div class="text-gray-500">Incoming Connections</div>
-              </div>
-            </card-tile>
-            <card-tile>
-              <div class="p-4">
-                <div :class="textDataSize">
-                  {{ nodeInfo.networkInfo.connections_out }}
-                </div>
-                <div class="text-gray-500">Outgoing Connections</div>
-              </div>
-            </card-tile>
-
-            <card-tile-button @click="navigateToPeers(nodeIndex)">
+            <card-tile-button @click="isNetworksDrawerOpen = true">
               <div>
                 <UIcon name="solar:global-outline" size="22"></UIcon>
               </div>
-              <div>Connection Map</div>
+              <div>Networks</div>
             </card-tile-button>
             <card-tile-button @click="isLocalAddressesDrawerOpen = true">
               <div>
@@ -211,9 +147,25 @@ onMounted(async () => {
             <card-tile>
               <div class="p-4">
                 <div :class="textDataSize">
+                  {{ nodeInfo.blockchainInfo.chain }}
+                </div>
+                <div class="text-gray-500">Chain</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
                   {{ nodeInfo.blockchainInfo.blocks }}
                 </div>
                 <div class="text-gray-500">Blocks</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ nodeInfo.blockchainInfo.headers }}
+                </div>
+                <div class="text-gray-500">Headers</div>
               </div>
             </card-tile>
             <card-tile>
@@ -226,10 +178,34 @@ onMounted(async () => {
             </card-tile>
             <card-tile>
               <div class="p-4">
+                <UBadge variant="subtle" class="" color="neutral">
+                  {{ nodeInfo.blockchainInfo.bestblockhash }}
+                </UBadge>
+                <div class="text-gray-500">Best Block Hash</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
                 <div :class="textDataSize">
                   {{ formatBytes(nodeInfo.blockchainInfo.size_on_disk) }}
                 </div>
                 <div class="text-gray-500">Size on Disk</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ formatTimestamp(nodeInfo.blockchainInfo.time) }}
+                </div>
+                <div class="text-gray-500">Time (Last Block Created)</div>
+              </div>
+            </card-tile>
+            <card-tile>
+              <div class="p-4">
+                <div :class="textDataSize">
+                  {{ formatTimestamp(nodeInfo.blockchainInfo.mediantime) }}
+                </div>
+                <div class="text-gray-500">Median Time (Last 11 Blocks)</div>
               </div>
             </card-tile>
             <card-tile>
@@ -262,154 +238,7 @@ onMounted(async () => {
             </card-tile>
           </div>
         </card-subtle>
-
-        <!-- Mempool -->
-
-        <card-subtle class="">
-          <template #header>
-            <div class="p-4">
-              <h3 class="text-lg font-medium">Mempool Info</h3>
-            </div>
-          </template>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2">
-            <card-tile>
-              <div class="p-4">
-                <div :class="textDataSize">
-                  {{ nodeInfo.mempoolInfo.size }}
-                </div>
-                <div class="text-gray-500">Transactions</div>
-              </div>
-            </card-tile>
-            <card-tile>
-              <div class="p-4">
-                <div :class="textDataSize">
-                  {{ formatBytes(nodeInfo.mempoolInfo.bytes) }}
-                </div>
-                <div class="text-gray-500">Size</div>
-              </div>
-            </card-tile>
-            <card-tile>
-              <div class="p-4">
-                <div :class="textDataSize">
-                  {{ nodeInfo.mempoolInfo.total_fee.toFixed(8) }} BTC
-                </div>
-                <div class="text-gray-500">Total Fee</div>
-              </div>
-            </card-tile>
-            <card-tile>
-              <div class="p-4">
-                <div :class="textDataSize">
-                  {{ nodeInfo.mempoolInfo.mempoolminfee.toFixed(8) }}
-                  BTC/kB
-                </div>
-                <div class="text-gray-500">Min Fee Rate</div>
-              </div>
-            </card-tile>
-            <card-tile>
-              <div class="p-4">
-                <div :class="textDataSize">
-                  {{ nodeInfo.mempoolInfo.rbf_policy }}
-                </div>
-                <div class="text-gray-500">RBF Policy</div>
-              </div>
-            </card-tile>
-          </div>
-        </card-subtle>
       </div>
-
-      <!-- Mining Info -->
-
-      <div class="grid grid-cols-1 gap-4">
-        <card-subtle class="">
-          <template #header>
-            <div class="p-4">
-              <h3 class="text-lg font-medium">Mining Info</h3>
-            </div>
-          </template>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2">
-            <card-tile>
-              <div class="p-4">
-                <div :class="textDataSize">
-                  {{
-                    formatBytes(parseFloat(nodeInfo.miningInfo.networkhashps))
-                  }}
-                  H/s
-                </div>
-                <div class="text-gray-500">Network Hash Rate</div>
-              </div>
-            </card-tile>
-            <card-tile>
-              <div class="p-4">
-                <div :class="textDataSize">
-                  {{ parseFloat(nodeInfo.miningInfo.difficulty).toFixed(2) }}
-                </div>
-                <div class="text-gray-500">Difficulty</div>
-              </div>
-            </card-tile>
-            <card-tile>
-              <div class="p-4">
-                <div :class="textDataSize">
-                  {{ nodeInfo.miningInfo.pooledtx }}
-                </div>
-                <div class="text-gray-500">Pooled Transactions</div>
-              </div>
-            </card-tile>
-            <card-tile>
-              <div class="p-4">
-                <div :class="textDataSize">
-                  {{ nodeInfo.miningInfo.warnings || 'None' }}
-                </div>
-                <div class="text-gray-500">Warnings</div>
-              </div>
-            </card-tile>
-          </div>
-        </card-subtle>
-      </div>
-
-      <!-- Memory Info -->
-
-      <card-subtle class="">
-        <template #header>
-          <div class="p-4">
-            <h3 class="text-lg font-medium">Memory Info</h3>
-          </div>
-        </template>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2">
-          <card-tile>
-            <div class="p-4">
-              <div :class="textDataSize">
-                {{ formatBytes(nodeInfo.memoryInfo.locked.used) }}
-              </div>
-              <div class="text-gray-500">Used Memory</div>
-            </div>
-          </card-tile>
-          <card-tile>
-            <div class="p-4">
-              <div :class="textDataSize">
-                {{ formatBytes(nodeInfo.memoryInfo.locked.free) }}
-              </div>
-              <div class="text-gray-500">Free Memory</div>
-            </div>
-          </card-tile>
-          <card-tile>
-            <div class="p-4">
-              <div :class="textDataSize">
-                {{ formatBytes(nodeInfo.memoryInfo.locked.total) }}
-              </div>
-              <div class="text-gray-500">Total Memory</div>
-            </div>
-          </card-tile>
-          <card-tile>
-            <div class="p-4">
-              <div :class="textDataSize">
-                {{ nodeInfo.memoryInfo.locked.chunks_used }} /
-                {{ nodeInfo.memoryInfo.locked.chunks_free }}
-              </div>
-              <div class="text-gray-500">Chunks Used/Free</div>
-            </div>
-          </card-tile>
-        </div>
-      </card-subtle>
     </div>
 
     <div v-else-if="isLoading" class="max-w-md p-8 mx-auto mt-12 text-center">
@@ -519,6 +348,74 @@ onMounted(async () => {
             </div>
           </div>
         </card-tile>
+      </div>
+    </template>
+  </USlideover>
+  <USlideover
+    v-model:open="isNetworksDrawerOpen"
+    aria-describedby="Networks"
+    direction="right"
+    :overlay="false"
+    title="Local Services"
+    description="A list of Bitcoin services advertised on this node."
+    :modal="false"
+    class="w-full max-w-md"
+  >
+    <template #body>
+      <div v-if="nodeInfo" class="space-y-2">
+        <template v-for="(item, index) in nodeInfo.networkInfo.networks">
+          <card-tile class="dark:bg-black/20" v-if="item.reachable">
+            <div class="p-4">
+              <div :class="textDataSize">{{ item.name }}</div>
+              <div class="text-gray-500">Network Reachable</div>
+
+              <div
+                class="text-sm mt-1"
+                v-if="item.name.toLocaleLowerCase() === 'ipv4'"
+              >
+                Enables the node to connect to other nodes over the IPv4
+                protocol, relaying transactions and blocks as a full participant
+                in the Bitcoin network.
+              </div>
+
+              <div
+                class="text-sm mt-1"
+                v-if="item.name.toLocaleLowerCase() === 'ipv6'"
+              >
+                Enables the node to connect to other nodes over the IPv6
+                protocol, relaying transactions and blocks as a full participant
+                in the Bitcoin network, with support for a larger address space.
+              </div>
+
+              <div
+                class="text-sm mt-1"
+                v-if="item.name.toLocaleLowerCase() === 'onion'"
+              >
+                Enables the node to connect anonymously over the Tor network,
+                relaying transactions and blocks while enhancing privacy as a
+                full participant in the Bitcoin network.
+              </div>
+
+              <div
+                class="text-sm mt-1"
+                v-if="item.name.toLocaleLowerCase() === 'i2p'"
+              >
+                Enables the node to connect anonymously over the I2P network,
+                relaying transactions and blocks with privacy-focused routing as
+                a full participant in the Bitcoin network.
+              </div>
+
+              <div
+                class="text-sm mt-1"
+                v-if="item.name.toLocaleLowerCase() === 'cjdns'"
+              >
+                Enables the node to connect over the CJDNS mesh network,
+                relaying transactions and blocks in a decentralized, encrypted
+                network as a full participant in the Bitcoin network.
+              </div>
+            </div>
+          </card-tile>
+        </template>
       </div>
     </template>
   </USlideover>
