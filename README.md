@@ -109,11 +109,45 @@ rpcallowip=192.168.1.666/32
 
 `txindex=1` must be set in the bitcoin config, in order to search for transactions.
 
+### Generate a Bitcoin Knots Username and Password
+
+`wget https://raw.githubusercontent.com/bitcoin/bitcoin/master/share/rpcauth/rpcauth.py
+python3 rpcauth.py {NEW_USERNAME}`
+
 ## Developer Notes
 
 Start the dev server in a new terminal window using.
 
 `npm run dev`
+
+## Docker Support
+
+Install Docker Desktop, get it running then install the app using docker.
+
+### Install NPM Packages using Docker
+
+```
+docker run --rm -it -v "$(pwd):/app" -w /app node:24-slim \
+  npm install
+```
+
+### Builds (or rebuilds) the Docker Image(s) in the Dockerfile
+```
+docker compose up --build
+```
+
+### Start the Container
+```
+docker compose up
+```
+
+### RPC Test Using CURL
+This is good for debugging.
+```
+curl -v --user {USERNAME}:{PASSWORD} \
+--data-binary '{"jsonrpc":"1.0","id":"test","method":"uptime","params":[]}' \
+-H 'content-type: text/plain;' {HOST_URL}
+```
 
 ## Package List
 

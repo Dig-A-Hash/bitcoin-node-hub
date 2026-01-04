@@ -1,0 +1,14 @@
+services:
+  dev:
+    build: .
+    container_name: bitcoin-node-hub
+    ports:
+      - "3200:3000" # Host port : Container port
+      - "24678:24678"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - NITRO_HOST=0.0.0.0
+      - NITRO_PORT=3000
