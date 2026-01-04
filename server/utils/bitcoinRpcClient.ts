@@ -243,7 +243,7 @@ export class BitcoinRpcClient {
       'base64'
     );
 
-    const url = `${node.protocol}://${node.host}:${node.port}`;
+    const url = `http://${node.host}:${node.port}`;
     this.axiosInstance = axiosInstance;
     this.axiosInstance.defaults.baseURL = url;
     this.axiosInstance.defaults.headers.common[
