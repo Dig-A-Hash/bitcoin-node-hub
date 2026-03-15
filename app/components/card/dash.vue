@@ -53,40 +53,25 @@ const nodeProgress = computed(() => {
   };
 });
 
-// Navigation items
-const navItems = ref<DropdownMenuItem[]>([] satisfies DropdownMenuItem[]);
-
-watch(
-  bitcoinNodes,
-  (newNodes) => {
-    // generate menu
-    if (
-      !navItems.value.find((item) => item.label === 'General Info') &&
-      newNodes.length
-    ) {
-      navItems.value.push({
-        label: 'System Info',
-        to: `/system/${nodeIndex}`,
-      });
-
-      navItems.value.push({
-        label: 'Mempool',
-        to: `/mempool/${nodeIndex}`,
-      });
-
-      navItems.value.push({
-        label: 'Peers',
-        to: `/peers/${nodeIndex}`,
-      });
-
-      navItems.value.push({
-        label: 'Bans',
-        to: `/ban/${nodeIndex}`,
-      });
-    }
+// Keep menu definitions stable to avoid duplicate entries on reactive updates.
+const navItems = computed<DropdownMenuItem[]>(() => [
+  {
+    label: 'System Info',
+    to: `/system/${nodeIndex}`,
   },
-  { immediate: true, deep: true }
-);
+  {
+    label: 'Mempool',
+    to: `/mempool/${nodeIndex}`,
+  },
+  {
+    label: 'Peers',
+    to: `/peers/${nodeIndex}`,
+  },
+  {
+    label: 'Bans',
+    to: `/ban/${nodeIndex}`,
+  },
+]);
 
 function getStatusColor() {
   switch (status.value) {
@@ -140,11 +125,11 @@ function getStatusLightColor() {
         <div class="border-l dark:border-slate-800 light:border-slate-500 flex">
           <UDropdownMenu :items="navItems">
             <UTooltip :text="isLoading ||
-                nodeState?.isError ||
-                !dashboardNode ||
-                nodeState?.isIbd
-                ? 'Actions are Disabled'
-                : 'Actions'
+              nodeState?.isError ||
+              !dashboardNode ||
+              nodeState?.isIbd
+              ? 'Actions are Disabled'
+              : 'Actions'
               ">
               <UButton class="rounded-none rounded-tr-lg h-12" color="secondary" variant="ghost" :disabled="isLoading ||
                 nodeState?.isError ||
