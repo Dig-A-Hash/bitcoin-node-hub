@@ -92,27 +92,85 @@ The NUXT_BITCOIN_NODE_CREDENTIALS must be a valid JSON array.
 
 ## Node Config
 
-Connecting to nodes requires specific settings in the Bitcoin Configuration file on each node. Set the `rpcuser` and `rpcpassword` used by the API to access the Bitcoin CLI on the node.
+Connecting to nodes requires specific settings in the Bitcoin configuration file on each node. For Bitcoin Node Hub, the safer approach is to use `rpcauth` with a dedicated read-only RPC user, bind only to the interfaces you actually need, and whitelist only the RPC methods required by the app.
 
-`rpcbind` must be configured to listen on all IPs by using 0.0.0.0.
+Do not expose RPC on `0.0.0.0` unless you have a separate transport security layer in front of it. Prefer loopback plus the specific LAN IP that the node should listen on, and restrict `rpcallowip` to the exact host running Bitcoin Node Hub.
 
-In turn, `rpcallowip` should specify the ip address of the allowed IP/range to control access. This should be the IP running the Bitcoin Node Hub.
+### Minimal Read-Only Permissions
+
+The example below is the minimum read-only configuration for monitoring and viewing node data. It is appropriate when you want dashboard, peer, mempool, and transaction lookup access without granting administrative RPC permissions.
 
 ```
+# Bitcoin Knots relay node configuration
+listen=1
 server=1
-rpcuser=bitcoinrpc
-rpcpassword=your-password
-rpcport=8332
-rpcbind=0.0.0.0
-rpcallowip=192.168.1.666/32
+
+# Bind only to interfaces you actually need.
+rpcbind=127.0.0.1
+# Example: node LAN IP
+rpcbind=192.168.7.250
+
+# Allow only the Bitcoin Node Hub host.
+# Example: Bitcoin Node Hub host IP
+rpcallowip=192.168.7.251
+
+# Dedicated read-only RPC user for Bitcoin Node Hub
+rpcauth=bitcoin-node-hub:{SaltedPasswordHash}
+
+# Allow only the RPC methods needed for read-only monitoring
+rpcwhitelist=bitcoin-node-hub:getblock,getblockchaininfo,getblockcount,getblockhash,getrawtransaction,getindexinfo,getmemoryinfo,getmempoolentry,getmempoolinfo,getrawmempool,getdifficulty,getmininginfo,getnetworkinfo,getnettotals,getpeerinfo,uptime
+
+# Deny anything not explicitly whitelisted
+rpcwhitelistdefault=0
+
+# Required if you want transaction lookup by txid
+txindex=1
+
+# If this node does not use wallet functionality, disable it
+disablewallet=1
 ```
 
-`txindex=1` must be set in the bitcoin config, in order to search for transactions.
+This profile is intentionally limited. It does not permit ban-management RPCs such as `setban`, `listbanned`, or `clearbanned`. If you want to use Bitcoin Node Hub ban-management features, add only those methods explicitly instead of widening access broadly.
 
-### Generate a Bitcoin Knots Username and Password
+If the node is not using wallet functionality, `disablewallet=1` reduces exposed attack surface and avoids loading wallet RPCs that Bitcoin Node Hub does not need for monitoring.
 
-`wget https://raw.githubusercontent.com/bitcoin/bitcoin/master/share/rpcauth/rpcauth.py
-python3 rpcauth.py {NEW_USERNAME}`
+### Generate the Salted Password Hash
+
+Bitcoin Core and Bitcoin Knots provide the `rpcauth.py` helper to generate the `rpcauth=` value. This produces the `salt$hash` portion used in `bitcoin.conf` and avoids storing a plaintext RPC password in the config file.
+
+Download the helper from the upstream repository and run it with a dedicated username:
+
+```
+wget https://raw.githubusercontent.com/bitcoin/bitcoin/master/share/rpcauth/rpcauth.py
+python3 rpcauth.py bitcoin-node-hub
+```
+
+The script prints two important values:
+
+- `String to be appended to bitcoin.conf:` followed by a full `rpcauth=...` line.
+- `Your password:` followed by the cleartext password that Bitcoin Node Hub should use in `NUXT_BITCOIN_NODE_CREDENTIALS`.
+
+Example output:
+
+```
+String to be appended to bitcoin.conf:
+rpcauth=bitcoin-node-hub:3c6b5d7d4f8a1a2b$7d2d3c4b5a6f...
+Your password:
+uS7rYp9Kq2LmN4xV
+```
+
+In that example:
+
+- The full `rpcauth=bitcoin-node-hub:3c6b5d7d4f8a1a2b$7d2d3c4b5a6f...` line goes into `bitcoin.conf`.
+- The generated password `uS7rYp9Kq2LmN4xV` is the password Bitcoin Node Hub uses when connecting to that node.
+
+If you prefer to provide your own password instead of having the script generate one, pass it as the second argument:
+
+```
+python3 rpcauth.py bitcoin-node-hub your-strong-rpc-password
+```
+
+Use a unique RPC account for Bitcoin Node Hub, keep its method whitelist narrow, and rotate the password if you suspect it has been exposed.
 
 ## Developer Notes
 
