@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui';
+import type { NodeName } from '~~/shared/types/nodeName';
 
 /**
  * node.host will not exist if there is a problem
@@ -35,7 +36,7 @@ const navItems = ref<NavigationMenuItem[]>([
 // Watch bitcoinNodes and append to navItems
 watch(
   bitcoinNodes,
-  (newNodes: NavigationMenuItem[]) => {
+  (newNodes: NodeName[]) => {
     const nodeItems: NavigationMenuItem[] = newNodes.map((node, index) => ({
       label: node.name || `Node ${index}`, // Assuming node has a 'name' property
       class: 'p-3 my-1',
@@ -44,36 +45,38 @@ watch(
       },
       disabled: disabledStates.value[index],
       slot: 'components' as const,
-      children: [
-        {
-          label: 'System Info',
-          to: `/system/${index}`,
-          onSelect: () => {
-            isMobileMenuOpen.value = false;
+      children: node.isError
+        ? undefined
+        : [
+          {
+            label: 'System Info',
+            to: `/system/${index}`,
+            onSelect: () => {
+              isMobileMenuOpen.value = false;
+            },
           },
-        },
-        {
-          label: 'Mempool',
-          to: `/mempool/${index}`,
-          onSelect: () => {
-            isMobileMenuOpen.value = false;
+          {
+            label: 'Mempool',
+            to: `/mempool/${index}`,
+            onSelect: () => {
+              isMobileMenuOpen.value = false;
+            },
           },
-        },
-        {
-          label: 'Peers',
-          to: `/peers/${index}`,
-          onSelect: () => {
-            isMobileMenuOpen.value = false;
+          {
+            label: 'Peers',
+            to: `/peers/${index}`,
+            onSelect: () => {
+              isMobileMenuOpen.value = false;
+            },
           },
-        },
-        {
-          label: 'Bans',
-          to: `/ban/${index}`,
-          onSelect: () => {
-            isMobileMenuOpen.value = false;
+          {
+            label: 'Bans',
+            to: `/ban/${index}`,
+            onSelect: () => {
+              isMobileMenuOpen.value = false;
+            },
           },
-        },
-      ],
+        ],
       onSelect: () => {
         isCollapsed.value = false;
         isMobileMenuOpen.value = false;
@@ -135,7 +138,7 @@ watch(
       });
     }
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 );
 
 // Toggle drawer function
@@ -159,36 +162,19 @@ function getNodeIconColor(index: number) {
 <template>
   <div class="flex min-h-screen">
     <!-- Sidebar for large screens -->
-    <aside
-      class="hidden lg:block border-r border-accented/50 dark:bg-elevated/50 light:bg-elevated/60"
-      :class="`${isCollapsed ? 'w-16' : 'w-64'}`"
-    >
+    <aside class="hidden lg:block border-r border-accented/50 dark:bg-elevated/50 light:bg-elevated/60"
+      :class="`${isCollapsed ? 'w-16' : 'w-64'}`">
       <div class="flex items-center p-3 justify-center">
-        <UIcon
-          size="32"
-          name="bitcoin-icons:bitcoin-circle-filled"
-          class="dark:text-orange-400 light:text-orange-700/80 mr-1"
-        ></UIcon>
-        <span class="text-lg font-semibold" v-if="!isCollapsed"
-          >Bitcoin Node Hub</span
-        >
+        <UIcon size="32" name="bitcoin-icons:bitcoin-circle-filled"
+          class="dark:text-orange-400 light:text-orange-700/80 mr-1"></UIcon>
+        <span class="text-lg font-semibold" v-if="!isCollapsed">Bitcoin Node Hub</span>
       </div>
 
       <div class="p-2 pt-0">
-        <UNavigationMenu
-          :highlight="true"
-          :collapsed="isCollapsed"
-          :items="navItems"
-          orientation="vertical"
-          color="secondary"
-          class="w-full"
-        >
+        <UNavigationMenu :highlight="true" :collapsed="isCollapsed" :items="navItems" orientation="vertical"
+          color="secondary" class="w-full">
           <template #components-leading="{ index }">
-            <UIcon
-              size="17"
-              name="material-symbols:network-node"
-              :class="getNodeIconColor(index)"
-            ></UIcon>
+            <UIcon size="17" name="material-symbols:network-node" :class="getNodeIconColor(index)"></UIcon>
           </template>
         </UNavigationMenu>
       </div>
@@ -198,52 +184,25 @@ function getNodeIconColor(index: number) {
     <div class="flex-1">
       <!-- Header -->
       <header
-        class="dark:bg-elevated/50 light:bg-elevated/60 border-b border-accented/50 flex justify-between items-center"
-      >
+        class="dark:bg-elevated/50 light:bg-elevated/60 border-b border-accented/50 flex justify-between items-center">
         <div class="flex items-center">
-          <UButton
-            color="secondary"
-            variant="ghost"
-            @click="toggleDrawer"
-            class="mr-4 rounded-none p-3 lg:hidden"
-          >
+          <UButton color="secondary" variant="ghost" @click="toggleDrawer" class="mr-4 rounded-none p-3 lg:hidden">
             <UIcon size="28" name="solar:hamburger-menu-linear" />
           </UButton>
-          <UIcon
-            size="32"
-            name="bitcoin-icons:bitcoin-circle-filled"
-            class="dark:text-orange-400 light:text-orange-700/80 mr-1 lg:hidden"
-          ></UIcon>
+          <UIcon size="32" name="bitcoin-icons:bitcoin-circle-filled"
+            class="dark:text-orange-400 light:text-orange-700/80 mr-1 lg:hidden"></UIcon>
           <span class="text-lg font-semibold lg:hidden">Bitcoin Node Hub</span>
         </div>
         <ColorModeToggle />
       </header>
 
       <!-- Nav Drawer for smaller screens -->
-      <USlideover
-        v-model:open="isMobileMenuOpen"
-        :ui="{ content: 'w-64', body: 'p-2 sm:p-2' }"
-        side="left"
-        title="Bitcoin Node Hub"
-        class="lg:hidden"
-      >
+      <USlideover v-model:open="isMobileMenuOpen" :ui="{ content: 'w-64', body: 'p-2 sm:p-2' }" side="left"
+        title="Bitcoin Node Hub" class="lg:hidden">
         <template #body>
-          <UNavigationMenu
-            :items="navItems"
-            orientation="vertical"
-            color="secondary"
-            class="w-full"
-          >
+          <UNavigationMenu :items="navItems" orientation="vertical" color="secondary" class="w-full">
             <template #components-leading="{ index }">
-              <UIcon
-                size="17"
-                name="material-symbols:network-node"
-                :class="`${
-                  bitcoinNodes[index - 1]?.isIbd
-                    ? 'dark:text-yellow-500 light:text-amber-700'
-                    : 'dark:text-green-500 light:text-green-700'
-                }`"
-              ></UIcon>
+              <UIcon size="17" name="material-symbols:network-node" :class="getNodeIconColor(index)"></UIcon>
             </template>
           </UNavigationMenu>
         </template>

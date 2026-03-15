@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { uptime } from 'process';
-
 const bitcoinStore = useBitcoin();
 const appSettings = useAppSettings();
 const { formatSecondsToDays } = useTextFormatting();
 
 const apiResponse = ref<(DashboardNode | null)[]>([]);
-const isLoading = ref(false);
-const pendingFetches = ref(new Set<number>()); // Track ongoing fetches by node index
+
+const hasDashboardData = computed(() =>
+  apiResponse.value.some((node) => node !== null && node !== undefined)
+);
+
+const isLoading = computed(
+  () => bitcoinStore.nodeNames.some((node) => !!node.isLoading) && !hasDashboardData.value
+);
 
 /**
  * Loads cached data for nodes in IBD status.
@@ -57,26 +61,40 @@ async function fetchDashboard(
 
   const fetchNode = async (i: number) => {
     if (!skipLoading) {
-      pendingFetches.value.add(i); // Track fetch start only if not skipping
+      bitcoinStore.updateNodeLoading(i, true);
     }
+
     try {
       const response = await fetch('/api/getDashboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nodeIndex: i }),
       });
-      const { data } = (await response.json()) as ApiResponse<DashboardNode>;
+      const payload = (await response.json()) as ApiResponse<DashboardNode>;
 
-      apiResponse.value[i] = data || null; // Set data or null on failure
+      if (!response.ok || !payload.success || !payload.data) {
+        const errorMessage =
+          typeof payload.error === 'string'
+            ? payload.error
+            : `Failed to load node ${i} (HTTP ${response.status})`;
+
+        throw new Error(
+          errorMessage
+        );
+      }
+
+      const data = payload.data;
+
+      apiResponse.value[i] = data;
       apiResponse.value = [...apiResponse.value]; // Trigger reactivity
 
-      // Update IDB Status and maintain cache without duplicates
-      if (bitcoinStore.nodeNames[i]) {
-        bitcoinStore.nodeNames[i].isIbd =
-          apiResponse.value[i]?.blockchainInfo.initialblockdownload ?? false;
+      bitcoinStore.updateNodeIbd(i, data.blockchainInfo.initialblockdownload);
+      bitcoinStore.updateNodeError(i, false);
+      bitcoinStore.updateNodeLoaded(i, true);
 
-        if (bitcoinStore.nodeNames[i].isIbd && data) {
-          // Update or add to cache by node index
+      // Update IBD cache without duplicates
+      if (bitcoinStore.nodeNames[i]) {
+        if (bitcoinStore.nodeNames[i].isIbd) {
           const existingIndex = bitcoinStore.cachedNodes.findIndex(
             (cachedNode) => cachedNode.nodeIndex === i
           );
@@ -91,11 +109,16 @@ async function fetchDashboard(
       console.error(`Error fetching node ${i}:`, error);
       apiResponse.value[i] = null; // Explicitly set null on error
       apiResponse.value = [...apiResponse.value]; // Trigger reactivity
+      bitcoinStore.updateNodeIbd(i, false);
+      bitcoinStore.updateNodeError(
+        i,
+        true,
+        error instanceof Error ? error.message : 'Failed to load node data'
+      );
+      bitcoinStore.updateNodeLoaded(i, true);
     } finally {
       if (!skipLoading) {
-        pendingFetches.value.delete(i); // Remove from pending fetches only if not skipping
-        // Update isLoading based on pending fetches
-        isLoading.value = pendingFetches.value.size > 0;
+        bitcoinStore.updateNodeLoading(i, false);
       }
     }
   };
@@ -119,11 +142,8 @@ watch(
   () => bitcoinStore.nodeCount,
   async () => {
     apiResponse.value = new Array(bitcoinStore.nodeCount).fill(null); // Reinitialize array
-    pendingFetches.value.clear(); // Clear pending fetches
     loadCachedData(); // Load cached data after node count change
-    if (bitcoinStore.nodeCount > 0) {
-      isLoading.value = true; // Set loading upfront for full reload
-    }
+
     await fetchDashboard(); // Now properly awaits all
   },
   { immediate: false }
@@ -144,19 +164,9 @@ onMounted(async () => {
   ) {
     apiResponse.value = new Array(bitcoinStore.nodeCount).fill(null);
   }
+
   loadCachedData(); // Load cached data for IBD nodes
-
-  // Immediately fetch data for non-IBD nodes (default: skipLoading=false)
-  const nonIbdIndices = Array.from(
-    { length: bitcoinStore.nodeCount },
-    (_, i) => i
-  ).filter((i) => !bitcoinStore.nodeNames[i]?.isIbd);
-  nonIbdIndices.forEach((i) => {
-    fetchDashboard(i);
-  });
-
-  // After starting initial fetches (all adds are sync), set isLoading based on pending
-  isLoading.value = pendingFetches.value.size > 0;
+  await fetchDashboard();
 
   // Set up intervals with skipLoading=true to avoid spinners on updates
   intervalRef.value = setInterval(() => {
@@ -177,38 +187,26 @@ onMounted(async () => {
 onUnmounted(() => {
   if (intervalRef.value) clearInterval(intervalRef.value);
   if (intervalSlowRef.value) clearInterval(intervalSlowRef.value);
-  pendingFetches.value.clear(); // Clear pending fetches on unmount
 });
 </script>
 
 <template>
-  <div
-    class=""
-    :class="{
-      'mx-4': apiResponse.length > 2,
-    }"
-  >
-    <div
-      v-if="
-        isLoading &&
-        !apiResponse.some((node) => node !== null && node !== undefined)
-      "
-      class="text-center"
-    >
+  <div class="" :class="{
+    'mx-4': apiResponse.length > 2,
+  }">
+    <div v-if="
+      isLoading &&
+      !apiResponse.some((node) => node !== null && node !== undefined)
+    " class="text-center">
       Loading...
     </div>
     <template v-else>
-      <div
-        :class="{
-          'w-full max-w-(--ui-container) mx-auto px-4 sm:px-6 lg:px-8':
-            apiResponse.length === 2,
-        }"
-      >
+      <div :class="{
+        'w-full max-w-(--ui-container) mx-auto px-4 sm:px-6 lg:px-8':
+          apiResponse.length === 2,
+      }">
         <div class="text-xl my-2 mt-4">Combined Totals</div>
-        <div
-          class="grid grid-cols-1 sm:grid-cols-4 gap-4"
-          v-if="apiResponse.length > 1"
-        >
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4" v-if="apiResponse.length > 1">
           <card-subtle class="p-4">
             <div class="text-2xl">
               {{
@@ -260,22 +258,15 @@ onUnmounted(() => {
           </card-subtle>
         </div>
         <div class="text-xl my-2 mt-8">Nodes</div>
-        <div
-          class="grid grid-cols-1 gap-4"
-          :class="{
-            'sm:grid-cols-2': apiResponse.length > 1,
-            'xl:grid-cols-3': apiResponse.length > 2,
-          }"
-        >
+        <div class="grid grid-cols-1 gap-4" :class="{
+          'sm:grid-cols-2': apiResponse.length > 1,
+          'xl:grid-cols-3': apiResponse.length > 2,
+        }">
           <template v-for="(node, index) in apiResponse" :key="index">
-            <card-dash
-              :is-loading="isLoading"
-              :dashboard-node="node"
-              :node-index="index"
-              :class="{
+            <card-dash :is-loading="bitcoinStore.nodeNames[index]?.isLoading ?? false" :dashboard-node="node"
+              :node-index="index" :class="{
                 'w-md mx-auto': apiResponse.length === 1,
-              }"
-            ></card-dash>
+              }"></card-dash>
           </template>
         </div>
       </div>

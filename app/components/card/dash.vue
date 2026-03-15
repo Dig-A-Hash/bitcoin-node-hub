@@ -14,17 +14,20 @@ const { dashboardNode, nodeIndex, isLoading } = defineProps<{
 
 const bytesInGB: number = 1073741824; // 1 GB = 2^30 bytes
 const bitcoinNodes = computed(() => bitcoinStore.nodeNames); // Reactively sync with nodeNames
+const nodeState = computed(() => bitcoinNodes.value[nodeIndex]);
 
 // Compute status reactively
 const status = computed(() => {
-  if (bitcoinNodes.value[nodeIndex]?.isError) {
+  if (nodeState.value?.isError) {
     return 'Offline';
-  } else if (bitcoinNodes.value[nodeIndex]?.isIbd) {
-    return 'Syncing';
-  } else if (!dashboardNode && isLoading) {
+  } else if (isLoading || (!nodeState.value?.hasLoaded && !dashboardNode)) {
     return 'Loading';
-  } else {
+  } else if (nodeState.value?.isIbd) {
+    return 'Syncing';
+  } else if (dashboardNode) {
     return 'Online';
+  } else {
+    return 'Offline';
   }
 });
 
@@ -38,14 +41,14 @@ const nodeProgress = computed(() => {
     inPercent:
       total > 0
         ? Math.round(
-            ((dashboardNode.networkInfo?.connections_in || 0) / total) * 100
-          )
+          ((dashboardNode.networkInfo?.connections_in || 0) / total) * 100
+        )
         : 0,
     outPercent:
       total > 0
         ? Math.round(
-            ((dashboardNode.networkInfo?.connections_out || 0) / total) * 100
-          )
+          ((dashboardNode.networkInfo?.connections_out || 0) / total) * 100
+        )
         : 0,
   };
 });
@@ -114,19 +117,11 @@ function getStatusLightColor() {
   <card-subtle header-class="">
     <template #header>
       <div class="flex items-center">
-        <div
-          class="border-r dark:border-slate-800 light:border-slate-500"
-          :class="getStatusColor()"
-        >
+        <div class="border-r dark:border-slate-800 light:border-slate-500" :class="getStatusColor()">
           <div class="rounded-none rounded-tl-lg px-4 h-12 flex items-center">
             <div class="text-center">
               <div class="flex items-center">
-                <UChip
-                  standalone
-                  :color="getStatusLightColor()"
-                  inset
-                  class="mr-2"
-                />
+                <UChip standalone :color="getStatusLightColor()" inset class="mr-2" />
                 <div class="text-xs">
                   {{ status }}
                 </div>
@@ -144,23 +139,18 @@ function getStatusLightColor() {
         </div>
         <div class="border-l dark:border-slate-800 light:border-slate-500 flex">
           <UDropdownMenu :items="navItems">
-            <UTooltip
-              :text="
+            <UTooltip :text="isLoading ||
+                nodeState?.isError ||
                 !dashboardNode ||
-                dashboardNode.blockchainInfo.initialblockdownload
-                  ? 'Actions are Disabled'
-                  : 'Actions'
-              "
-            >
-              <UButton
-                class="rounded-none rounded-tr-lg h-12"
-                color="secondary"
-                variant="ghost"
-                :disabled="
-                  !dashboardNode ||
-                  dashboardNode.blockchainInfo.initialblockdownload
-                "
-              >
+                nodeState?.isIbd
+                ? 'Actions are Disabled'
+                : 'Actions'
+              ">
+              <UButton class="rounded-none rounded-tr-lg h-12" color="secondary" variant="ghost" :disabled="isLoading ||
+                nodeState?.isError ||
+                !dashboardNode ||
+                nodeState?.isIbd
+                ">
                 <UIcon size="24" name="material-symbols:more-vert"></UIcon>
               </UButton>
             </UTooltip>
@@ -170,7 +160,7 @@ function getStatusLightColor() {
     </template>
 
     <!-- Node Loading -->
-    <div class="p-4 pb-2" v-if="isLoading && !dashboardNode">
+    <div class="p-4 pb-2" v-if="(isLoading || (!nodeState?.hasLoaded && !nodeState?.isError)) && !dashboardNode">
       <div class="text-center text-slate-500 max-w-sm mx-auto my-24 px-4">
         <div class="mb-3">
           <UProgress color="warning"></UProgress>
@@ -253,12 +243,8 @@ function getStatusLightColor() {
                     ) * 100
                   }}%
                 </div>
-                <UIcon
-                  title="Initial Block Download (IBD) Mode"
-                  name="material-symbols:refresh"
-                  class="spinner ml-2"
-                  size="32"
-                />
+                <UIcon title="Initial Block Download (IBD) Mode" name="material-symbols:refresh" class="spinner ml-2"
+                  size="32" />
               </div>
               <div class="text-gray-500">Sync Progress</div>
             </div>
@@ -327,17 +313,10 @@ function getStatusLightColor() {
               </div>
             </div>
             <div class="p-4 pt-0">
-              <UProgress
-                status
-                v-model="nodeProgress.inPercent"
-                color="secondary"
-                class=""
-                size="lg"
-                :ui="{
-                  indicator: 'rounded-none',
-                  status: 'light:text-slate-600 dark:text-slate-500',
-                }"
-              />
+              <UProgress status v-model="nodeProgress.inPercent" color="secondary" class="" size="lg" :ui="{
+                indicator: 'rounded-none',
+                status: 'light:text-slate-600 dark:text-slate-500',
+              }" />
             </div>
           </card-tile>
         </div>
@@ -345,11 +324,8 @@ function getStatusLightColor() {
     </template>
     <div v-else class="my-16">
       <div class="flex justify-center">
-        <UIcon
-          size="64"
-          name="material-symbols:network-node"
-          class="dark:text-red-500/50 light:text-red-600/60"
-        ></UIcon>
+        <UIcon size="64" name="material-symbols:network-node" class="dark:text-red-500/50 light:text-red-600/60">
+        </UIcon>
       </div>
       <div class="text-center text-sm dark:text-slate-500 mt-2">
         This node is offline or not responding.

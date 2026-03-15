@@ -7,19 +7,25 @@ export const useBitcoin = defineStore('bitcoin', () => {
   const nodeNames = ref<NodeName[]>([]);
   const cachedNodes = ref<DashboardNode[]>([]);
 
+  function initializeNodeState(node: NodeName): NodeName {
+    return reactive({
+      ...node,
+      isError: node.isError ?? false,
+      isIbd: node.isIbd ?? false,
+      isLoading: false,
+      hasLoaded: false,
+      lastError: null,
+    });
+  }
+
   async function fetchNodeNames() {
-    const response = await $fetch<ApiResponse<(NodeName | null)[]>>(
-      '/api/getNodeNames',
-      {
-        method: 'GET',
-      }
-    );
+    const response = await $fetch<ApiResponse<NodeName[]>>('/api/getNodeNames', {
+      method: 'GET',
+    });
 
     if (response.success && response.data) {
-      // Wrap each non-null node in reactive to ensure properties like isIbd are reactive
       nodeNames.value = response.data
-        .filter((node): node is NodeName => node !== null)
-        .map((node) => reactive(node));
+        .map((node) => initializeNodeState(node));
       nodeCount.value = nodeNames.value.length;
     }
   }
@@ -30,11 +36,33 @@ export const useBitcoin = defineStore('bitcoin', () => {
     }
   }
 
+  function updateNodeLoading(index: number, isLoading: boolean) {
+    if (nodeNames.value[index]) {
+      nodeNames.value[index].isLoading = isLoading;
+    }
+  }
+
+  function updateNodeError(index: number, isError: boolean, lastError?: string) {
+    if (nodeNames.value[index]) {
+      nodeNames.value[index].isError = isError;
+      nodeNames.value[index].lastError = isError ? lastError ?? null : null;
+    }
+  }
+
+  function updateNodeLoaded(index: number, hasLoaded: boolean) {
+    if (nodeNames.value[index]) {
+      nodeNames.value[index].hasLoaded = hasLoaded;
+    }
+  }
+
   return {
     nodeCount,
     nodeNames,
     fetchNodeNames,
     updateNodeIbd,
+    updateNodeLoading,
+    updateNodeError,
+    updateNodeLoaded,
     cachedNodes,
   };
 });
