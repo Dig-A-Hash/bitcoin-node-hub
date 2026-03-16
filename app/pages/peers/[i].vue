@@ -428,7 +428,6 @@ function renderMap() {
           <strong>Inbound:</strong> ${feature.get('inbound') ? 'Yes' : 'No'}
         </div>
       `;
-      tooltipContainer.value!.style.display = 'block';
       mapContainer.value!.style.cursor = 'pointer';
     } else {
       tooltipContainer.value!.style.display = 'none';
@@ -478,9 +477,11 @@ function renderMap() {
 }
 
 function onSelect(
-  _event: Event,
-  row: TableRow<PeerInfo & { geo?: GeoIpResponse }>
+  e: Event,
+  _ignored?: TableRow<PeerInfo & { geo?: GeoIpResponse }>
 ) {
+  // Nuxt UI v3 emits the row as the first argument despite the type saying Event
+  const row = e as unknown as TableRow<PeerInfo & { geo?: GeoIpResponse }>;
   // Clear previous selections
   Object.keys(rowSelection.value).forEach((key) => {
     rowSelection.value[Number(key)] = false;
@@ -489,36 +490,21 @@ function onSelect(
   row.toggleSelected(true);
   selectedPeer.value = row.original;
 
-  // Zoom to the selected peer's location with zoom-out first
+  // Zoom to the selected peer's location: zoom out first, then zoom in
   if (map && row.original.geo) {
     const lat = parseFloat(row.original.geo.latitude as any);
     const lon = parseFloat(row.original.geo.longitude as any);
     if (!isNaN(lat) && !isNaN(lon)) {
-      map?.render();
-      // Zoom out to world view
-      map.getView().animate(
-        {
-          center: fromLonLat([0, 0]), // Center of the world
-          zoom: 1, // World view zoom level
-          duration: 1500, // Zoom-out duration
-        },
-        () => {
-          map?.render(); // Force redraw after zoom-out
-          // Add delay before zooming in
-          setTimeout(() => {
-            // Zoom in to the selected location
-            map?.getView().animate(
-              {
-                center: fromLonLat([lon, lat]),
-                zoom: 10, // Adjust zoom level as needed
-                duration: 2500, // Zoom-in duration
-              },
-              () => {
-                map?.render(); // Force redraw after zoom-in
-              }
-            );
-          }, 300); // 300ms delay between animations
-        }
+      const view = map.getView();
+      const currentZoom = view.getZoom() ?? 4;
+      const dip = Math.min(currentZoom, 4); // zoom out to at most z=4 midway
+      // Pan and zoom-dip run simultaneously; zoom recovers in second half
+      view.animate(
+        { center: fromLonLat([lon, lat]), duration: 2000 }
+      );
+      view.animate(
+        { zoom: dip, duration: 1000 },
+        { zoom: 10, duration: 1000 }
       );
     }
   }
