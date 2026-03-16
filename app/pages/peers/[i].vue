@@ -15,8 +15,6 @@ import Stroke from 'ol/style/Stroke';
 import { UBadge, UButton } from '#components';
 
 // Configurable Items
-const INBOUND_COLOR = '#f7931a'; // Orange
-const OUTBOUND_COLOR = '#3399ff'; // Blue
 const STROKE_COLOR = '#000000'; // Black stroke for visibility
 const HEADER_HEIGHT = 135; // Replace with your actual header height (in pixels)
 
@@ -37,6 +35,52 @@ const mapHeight = ref(100);
 const avgPingTime = ref(-1);
 const selectedPeer = ref<(PeerInfo & { geo?: GeoIpResponse }) | null>(null);
 const rowSelection = ref<Record<number, boolean>>({});
+const isMapPanelCollapsed = ref(false);
+
+const MAP_PANEL_EXPANDED_HEIGHT = 200;
+const MAP_PANEL_HEADER_HEIGHT = 44;
+
+type VersionStat = {
+  version: string;
+  count: number;
+};
+
+function normalizeVersionLabel(version?: string) {
+  return version?.replace(/\//g, '').trim() || 'Unknown';
+}
+
+const versionStats = computed<VersionStat[]>(() => {
+  const counts: Record<string, number> = {};
+
+  combinedPeerData.value.forEach((peer) => {
+    const version = normalizeVersionLabel(peer.subver);
+    counts[version] = (counts[version] || 0) + 1;
+  });
+
+  const stats: VersionStat[] = [];
+  for (const version in counts) {
+    stats.push({ version, count: counts[version] || 0 });
+  }
+
+  return stats.sort((a, b) => {
+    if (b.count !== a.count) {
+      return b.count - a.count;
+    }
+    return a.version.localeCompare(b.version);
+  });
+});
+
+const versionColorMap = computed<Record<string, string>>(() => {
+  const colors: Record<string, string> = {};
+  const total = Math.max(versionStats.value.length, 1);
+
+  versionStats.value.forEach((entry, index) => {
+    const hue = Math.round((index * 360) / total);
+    colors[entry.version] = `hsl(${hue}, 72%, 46%)`;
+  });
+
+  return colors;
+});
 
 const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
   {
@@ -46,7 +90,7 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
     cell: ({ row }) => {
       const address = row.original.addr;
       const protocolVersion = row.original.version;
-      const version = row.original.subver;
+      const version = normalizeVersionLabel(row.original.subver);
       const city = row.original.geo?.city ?? 'N/A';
       const state = row.original.geo?.state ?? 'N/A';
       const country = row.original.geo?.country ?? 'N/A';
@@ -62,7 +106,7 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
               class:
                 'font-bold truncate max-w-[150px] lg:max-w-[190px] xl:max-w-[230px]',
             },
-            version.replace('/', '').slice(0, -1)
+            version
           ),
           h('div', { class: 'truncate max-w-[150px]' }, `${city}`),
           h('div', { class: 'truncate max-w-[150px]' }, `${state}, ${country}`),
@@ -284,17 +328,22 @@ async function fetchGeoLocations(peers: PeerInfo[]) {
 function renderMap() {
   if (!mapContainer.value || !tooltipContainer.value) return;
   const vectorSource = new VectorSource();
+  const currentVersionColorMap = versionColorMap.value;
+
   combinedPeerData.value.forEach((peer, index) => {
     const geo = peer.geo;
     if (geo && geo.latitude && geo.longitude) {
       const lat = Number(geo.latitude);
       const lon = Number(geo.longitude);
       if (!isNaN(lat) && !isNaN(lon)) {
+        const versionLabel = normalizeVersionLabel(peer.subver);
         const feature = new Feature({
           geometry: new Point(fromLonLat([lon, lat])),
           index: index,
           inbound: peer.inbound,
           ip: peer.addr,
+          version: versionLabel,
+          markerColor: currentVersionColorMap[versionLabel] || '#6b7280',
           city: geo.city || 'N/A',
           country: geo.country || 'N/A',
           connection_type: peer.connection_type || 'N/A',
@@ -330,12 +379,12 @@ function renderMap() {
       new VectorLayer({
         source: vectorSource,
         style: (feature) => {
-          const isInbound = feature.get('inbound');
+          const markerColor = feature.get('markerColor') || '#6b7280';
           return new Style({
             image: new Circle({
               radius: 6,
               fill: new Fill({
-                color: isInbound ? INBOUND_COLOR : OUTBOUND_COLOR,
+                color: markerColor,
               }),
               stroke: new Stroke({ color: STROKE_COLOR, width: 1 }),
             }),
@@ -372,6 +421,7 @@ function renderMap() {
       tooltipContainer.value!.innerHTML = `
         <div class="tooltip-content">
           <strong>IP:</strong> ${feature.get('ip')}<br>
+          <strong>Version:</strong> ${feature.get('version')}<br>
           <strong>Location:</strong> ${feature.get('city')}, ${feature.get(
         'country'
       )}<br>
@@ -428,6 +478,7 @@ function renderMap() {
 }
 
 function onSelect(
+  _event: Event,
   row: TableRow<PeerInfo & { geo?: GeoIpResponse }>
 ) {
   // Clear previous selections
@@ -508,7 +559,7 @@ onUnmounted(() => {
     <div class="flex space-x-4 mt-4">
       <card-subtle class="w-110">
         <template #header>
-          <div class="p-2">{{ combinedPeerData.length }} Connected Nodes</div>
+          <div class="p-2">{{ combinedPeerData.length }} Connected Peers</div>
         </template>
         <div>
           <div v-if="isLoading" class="text-center text-gray-400">
@@ -548,29 +599,34 @@ onUnmounted(() => {
             </div>
           </div>
         </template>
-        <div class="map-viewport-wrapper">
+        <div class="relative">
           <div ref="mapContainer" class="w-full" :style="{ height: `${mapHeight}px` }"></div>
-          <div class="map-floating-box">
-            <h3 class="map-floating-box__title">Viewport Notes</h3>
-            <p>
-              This panel is anchored to the map viewport's bottom-left corner and remains in place as the
-              viewport scales with the browser window.
-            </p>
-            <p>
-              Scrolling demo content:
-            </p>
-            <ul>
-              <li>Peer marker interactions stay active behind this panel.</li>
-              <li>Resize the window to confirm the fixed corner placement.</li>
-              <li>Inbound peers are shown in orange markers.</li>
-              <li>Outbound peers are shown in blue markers.</li>
-              <li>Open the drawer to inspect per-peer details.</li>
-              <li>Use map click to auto-select rows in the table.</li>
-              <li>Tooltip hover is still available over visible markers.</li>
-              <li>This content intentionally overflows to show scrolling.</li>
-              <li>You can add any custom controls here later.</li>
-              <li>Box size is fixed at 300px by 250px.</li>
-            </ul>
+          <div
+            class="absolute left-3 bottom-3 w-75 bg-yellow-100 border-2 border-black shadow-[0_4px_10px_rgba(0,0,0,0.2)] z-750 overflow-hidden text-black leading-[1.3] flex flex-col rounded-t-xl"
+            :class="{ 'pb-2': isMapPanelCollapsed }"
+            :style="{ height: `${isMapPanelCollapsed ? MAP_PANEL_HEADER_HEIGHT : MAP_PANEL_EXPANDED_HEIGHT}px` }">
+            <div
+              class="sticky top-0 z-1 flex items-center justify-between border-b border-black p-2 bg-white rounded-t-xl">
+              <h3 class="font-bold m-0">Peer Versions</h3>
+              <UButton :icon="isMapPanelCollapsed
+                ? 'material-symbols:keyboard-arrow-up-rounded'
+                : 'material-symbols:keyboard-arrow-down-rounded'" color="neutral" variant="subtle" size="xs"
+                :aria-label="isMapPanelCollapsed ? 'Expand panel' : 'Collapse panel'"
+                @click="isMapPanelCollapsed = !isMapPanelCollapsed" />
+            </div>
+            <div v-show="!isMapPanelCollapsed" class="overflow-auto p-2">
+              <div v-if="versionStats.length" class="space-y-1.5">
+                <div v-for="item in versionStats" :key="item.version" class="flex items-center">
+                  <span
+                    class="mr-2 inline-flex min-w-10 h-6 items-center justify-center rounded-full px-2 text-xs font-bold text-white shrink-0"
+                    :style="{ backgroundColor: versionColorMap[item.version] }">
+                    {{ item.count }}
+                  </span>
+                  <span class="text-xs font-semibold whitespace-nowrap">{{ item.version }}</span>
+                </div>
+              </div>
+              <div v-else class="text-xs text-gray-500">No versions available</div>
+            </div>
           </div>
           <div ref="tooltipContainer" class="tooltip"></div>
         </div>
@@ -589,41 +645,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.map-viewport-wrapper {
-  position: relative;
-}
-
-.map-floating-box {
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
-  width: 300px;
-  height: 200px;
-  background-color: #fff9c4;
-  border: 2px solid #000000;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  padding: 12px;
-  z-index: 750;
-  overflow-y: auto;
-  color: #111111;
-  font-size: 13px;
-  line-height: 1.3;
-}
-
-.map-floating-box__title {
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.map-floating-box ul {
-  margin-top: 8px;
-  padding-left: 18px;
-}
-
-.map-floating-box li {
-  margin-bottom: 4px;
-}
-
 .tooltip {
   position: absolute;
   background-color: rgba(0, 0, 0, 0.8);
@@ -634,7 +655,7 @@ onUnmounted(() => {
   pointer-events: none;
   display: none;
   z-index: 1000;
-  width: 200px;
+  min-width: 200px;
 }
 
 .tooltip-content {
