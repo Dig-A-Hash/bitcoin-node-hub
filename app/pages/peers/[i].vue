@@ -602,15 +602,14 @@ onUnmounted(() => {
         <div class="relative">
           <div ref="mapContainer" class="w-full" :style="{ height: `${mapHeight}px` }"></div>
           <div
-            class="absolute left-3 bottom-3 w-75 bg-yellow-100 border-2 border-black shadow-[0_4px_10px_rgba(0,0,0,0.2)] z-750 overflow-hidden text-black leading-[1.3] flex flex-col rounded-t-xl"
+            class="absolute left-3 bottom-3 w-75 bg-black/80 border-2 border-black shadow-[0_4px_10px_rgba(0,0,0,0.2)] z-750 overflow-hidden text-white leading-[1.3] flex flex-col rounded-t-xl"
             :class="{ 'pb-2': isMapPanelCollapsed }"
             :style="{ height: `${isMapPanelCollapsed ? MAP_PANEL_HEADER_HEIGHT : MAP_PANEL_EXPANDED_HEIGHT}px` }">
-            <div
-              class="sticky top-0 z-1 flex items-center justify-between border-b border-black p-2 bg-white rounded-t-xl">
+            <div class="sticky top-0 z-1 flex items-center justify-between border-0 border-black p-2  rounded-t-xl">
               <h3 class="font-bold m-0">Peer Versions</h3>
               <UButton :icon="isMapPanelCollapsed
                 ? 'material-symbols:keyboard-arrow-up-rounded'
-                : 'material-symbols:keyboard-arrow-down-rounded'" color="neutral" variant="subtle" size="xs"
+                : 'material-symbols:keyboard-arrow-down-rounded'" color="secondary" variant="subtle" size="xs"
                 :aria-label="isMapPanelCollapsed ? 'Expand panel' : 'Collapse panel'"
                 @click="isMapPanelCollapsed = !isMapPanelCollapsed" />
             </div>
