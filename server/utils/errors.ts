@@ -54,6 +54,17 @@ export function sendErrorResponse(event: H3Event, error: any): ApiResponse {
     }
   }
 
+  // Handle upstream HTTP errors thrown by axios (e.g. from Bitcoin node RPC).
+  // 401/403 from the node means the RPC method is not permitted for this user.
+  const upstreamStatus = error.response?.status;
+  if (upstreamStatus === HttpStatusCode.Unauthorized || upstreamStatus === HttpStatusCode.Forbidden) {
+    setResponseStatus(event, HttpStatusCode.Forbidden);
+    return {
+      success: false,
+      error: 'This node has not granted permission for this action.',
+    };
+  }
+
   return {
     success: false,
     error: 'An unexpected error occurred.',

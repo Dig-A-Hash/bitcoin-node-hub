@@ -1,17 +1,25 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui';
-import { remove } from 'ol/array';
 
 const banEntries = ref<BanEntry[]>();
 const bitcoinStore = useBitcoin();
 const { formatTimestamp, formatSecondsToDays, formatIpNoPort } =
   useTextFormatting();
+const {
+  BAN_PERMISSION_FULL_MESSAGE,
+  getApiErrorMessage,
+  isBanPermissionDeniedError,
+  isBanPermissionDeniedMessage,
+} = useApiErrorHelpers();
 const route = useRoute();
 const toast = useToast();
 
 const nodeIndex = parseInt(route.params.i?.toString() || '');
 const isLoading = ref(false);
 const isError = ref(false);
+const isBanPermissionError = ref(false);
+const errorTitle = ref('Error');
+const errorDescription = ref('There was an error fetching the data for this node.');
 const isBanConfirmShowing = ref(false);
 const isBanRemoveLoading = ref(false);
 const selectedAddress = ref('');
@@ -60,18 +68,50 @@ const columns: TableColumn<BanEntry>[] = [
 async function fetchNodeInfo() {
   try {
     isLoading.value = true;
+    isError.value = false;
+    isBanPermissionError.value = false;
     const response = await $fetch<ApiResponse<BanEntry[]>>(
       `/api/ban/listBanned?nodeIndex=${nodeIndex}`,
       {
         method: 'GET',
       }
     );
-    if (response.success && response.data) {
-      banEntries.value = response.data;
+
+    if (!response.success) {
+      const errorMessage =
+        typeof response.error === 'string'
+          ? response.error
+          : 'There was an error fetching the data for this node.';
+
+      isError.value = true;
+      if (isBanPermissionDeniedMessage(errorMessage)) {
+        isBanPermissionError.value = true;
+        errorTitle.value = 'Ban Permissions Required';
+        errorDescription.value = BAN_PERMISSION_FULL_MESSAGE;
+      } else {
+        errorTitle.value = 'Error';
+        errorDescription.value = errorMessage;
+      }
+      banEntries.value = undefined;
+      return;
     }
+
+    banEntries.value = response.data || [];
   } catch (error) {
     console.error('Error fetching:', error);
     isError.value = true;
+    if (isBanPermissionDeniedError(error)) {
+      isBanPermissionError.value = true;
+      errorTitle.value = 'Ban Permissions Required';
+      errorDescription.value = BAN_PERMISSION_FULL_MESSAGE;
+      return;
+    }
+
+    errorTitle.value = 'Error';
+    errorDescription.value = getApiErrorMessage(
+      error,
+      'There was an error fetching the data for this node.'
+    );
   } finally {
     isLoading.value = false;
   }
@@ -85,7 +125,7 @@ function confirmRemoveBan(address: string) {
 async function removeBan() {
   try {
     isBanRemoveLoading.value = true;
-    const response = await $fetch<ApiResponse<BanEntry[]>>(
+    const response = await $fetch<ApiResponse<{ ip: string }>>(
       `/api/ban/removeBan`,
       {
         method: 'POST',
@@ -93,25 +133,61 @@ async function removeBan() {
       }
     );
 
-    if (response.success && response.data) {
-      await fetchNodeInfo();
-      isBanConfirmShowing.value = false;
-      toast.add({
-        title: 'Success',
-        description: `The ban for ${formatIpNoPort(
-          selectedAddress.value
-        )} has been removed.`,
-      });
+    if (!response.success) {
+      const errorMessage =
+        typeof response.error === 'string'
+          ? response.error
+          : `The ban for ${formatIpNoPort(selectedAddress.value)} has failed.`;
+
+      if (isBanPermissionDeniedMessage(errorMessage)) {
+        isBanPermissionError.value = true;
+        errorTitle.value = 'Ban Permissions Required';
+        errorDescription.value = BAN_PERMISSION_FULL_MESSAGE;
+        toast.add({
+          color: 'warning',
+          title: 'Ban Permissions Required',
+          description: BAN_PERMISSION_FULL_MESSAGE,
+        });
+      } else {
+        toast.add({
+          color: 'error',
+          title: 'Error',
+          description: errorMessage,
+        });
+      }
+      return;
     }
+
+    await fetchNodeInfo();
+    isBanConfirmShowing.value = false;
+    toast.add({
+      title: 'Success',
+      description: `The ban for ${formatIpNoPort(
+        selectedAddress.value
+      )} has been removed.`,
+    });
   } catch (error) {
     console.error('Error fetching:', error);
     isError.value = true;
+    if (isBanPermissionDeniedError(error)) {
+      isBanPermissionError.value = true;
+      errorTitle.value = 'Ban Permissions Required';
+      errorDescription.value = BAN_PERMISSION_FULL_MESSAGE;
+      toast.add({
+        color: 'warning',
+        title: 'Ban Permissions Required',
+        description: BAN_PERMISSION_FULL_MESSAGE,
+      });
+      return;
+    }
+
     toast.add({
       color: 'error',
       title: 'Error',
-      description: `The ban for ${formatIpNoPort(
-        selectedAddress.value
-      )} has failed.`,
+      description: getApiErrorMessage(
+        error,
+        `The ban for ${formatIpNoPort(selectedAddress.value)} has failed.`
+      ),
     });
   } finally {
     isBanRemoveLoading.value = false;
@@ -127,13 +203,7 @@ onMounted(async () => {
   <UContainer class="mt-4">
     <h1 class="text-xl mb-4 text-white flex justify-between items-center">
       <span> Bans </span>
-      <UBadge
-        size="xl"
-        class="ml-4"
-        color="primary"
-        icon="material-symbols:network-node"
-        variant="subtle"
-      >
+      <UBadge size="xl" class="ml-4" color="primary" icon="material-symbols:network-node" variant="subtle">
         {{ bitcoinStore.nodeNames[nodeIndex]?.name }}
       </UBadge>
     </h1>
@@ -141,25 +211,13 @@ onMounted(async () => {
       <card-subtle class=" ">
         <div class="grid grid-cols-1 gap-2 p-2">
           <div class="p-4">
-            <UTable
-              ref="table"
-              sticky
-              :data="banEntries"
-              class="flex-1"
-              :columns="columns"
-              :ui="{
-                tr: 'data-[selected=true]:bg-elevated/100 data-[selected=true]:border-l-2 border-b-1 data-[selected=true]:border-l-green-500',
-                td: 'light:text-gray-700',
-              }"
-            >
+            <UTable ref="table" sticky :data="banEntries" class="flex-1" :columns="columns" :ui="{
+              tr: 'data-[selected=true]:bg-elevated/100 data-[selected=true]:border-l-2 border-b-1 data-[selected=true]:border-l-green-500',
+              td: 'light:text-gray-700',
+            }">
               <template #action-cell="{ row }">
-                <UButton
-                  color="error"
-                  icon="material-symbols:delete-outline"
-                  variant="subtle"
-                  @click="confirmRemoveBan(row.original.address)"
-                  >Remove</UButton
-                >
+                <UButton color="error" icon="material-symbols:delete-outline" variant="subtle"
+                  @click="confirmRemoveBan(row.original.address)">Remove</UButton>
               </template>
             </UTable>
           </div>
@@ -173,11 +231,9 @@ onMounted(async () => {
     </div>
 
     <div v-else-if="isError" class="max-w-md p-8 mx-auto mt-12 text-center">
-      <UAlert
-        color="error"
-        title="Error"
-        description="There was an error fetching the data for this node."
-      />
+      <UAlert variant="subtle" :color="isBanPermissionError ? 'warning' : 'error'" :title="errorTitle"
+        :description="errorDescription" />
+
     </div>
   </UContainer>
 
@@ -190,19 +246,9 @@ onMounted(async () => {
           {{ formatIpNoPort(selectedAddress) }}?
         </p>
         <div class="mt-4 flex justify-end gap-2">
-          <UButton
-            color="neutral"
-            variant="subtle"
-            @click="isBanConfirmShowing = false"
-            >Cancel</UButton
-          >
-          <UButton
-            color="error"
-            @click="removeBan()"
-            variant="subtle"
-            :loading="isBanRemoveLoading"
-            >Remove Ban</UButton
-          >
+          <UButton color="neutral" variant="subtle" @click="isBanConfirmShowing = false">Cancel</UButton>
+          <UButton color="error" @click="removeBan()" variant="subtle" :loading="isBanRemoveLoading">Remove Ban
+          </UButton>
         </div>
       </div>
     </template>

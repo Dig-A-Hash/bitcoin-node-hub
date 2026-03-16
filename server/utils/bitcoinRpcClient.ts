@@ -34,12 +34,8 @@ export class BitcoinRpcClient {
      * @returns A promise resolving to true if the bans were successfully cleared.
      */
     clearBanned: async (): Promise<boolean> => {
-      try {
-        this.rpc<boolean>('clearbanned');
-        return true;
-      } catch {
-        return false;
-      }
+      await this.rpc<void>('clearbanned');
+      return true;
     },
     /**
      * Retrieves the list of banned IP addresses or subnets.
@@ -54,12 +50,8 @@ export class BitcoinRpcClient {
      * @returns A promise resolving to true if the ban was successfully removed.
      */
     removeBan: async (ip: string): Promise<boolean> => {
-      try {
-        this.rpc<void>('setban', [ip, 'remove']);
-        return true;
-      } catch {
-        return false;
-      }
+      await this.rpc<void>('setban', [ip, 'remove']);
+      return true;
     },
     /**
      * Bans a specified IP address or subnet from connecting to the node.
@@ -73,12 +65,8 @@ export class BitcoinRpcClient {
       banTime: number = 0,
       absolute: boolean = false
     ): Promise<boolean> => {
-      try {
-        this.rpc<void>('setban', [ip, 'add', banTime, absolute]);
-        return true;
-      } catch {
-        return false;
-      }
+      await this.rpc<void>('setban', [ip, 'add', banTime, absolute]);
+      return true;
     },
   };
 
