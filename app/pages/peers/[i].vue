@@ -372,7 +372,7 @@ function renderMap() {
         source: new OSM({
           url: 'https://{a-d}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
           attributions:
-            '<span style="color: #ffffff;">© CARTO © OpenStreetMap contributors</span>',
+            '<span style="color: #787878;">© CARTO © OpenStreetMap contributors</span>',
         }),
         className: 'ol-layer-dark',
       }),
