@@ -70,8 +70,8 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
             'div',
             {
               class: `text-xs truncate max-w-[150px] mt-0.5 ${protocolVersion < 70015
-                  ? 'dark:text-yellow-500 light:text-red-500 font-bold'
-                  : ''
+                ? 'dark:text-yellow-500 light:text-red-500 font-bold'
+                : ''
                 }`,
             },
             `Protocol Version: ${protocolVersion}`
@@ -428,7 +428,6 @@ function renderMap() {
 }
 
 function onSelect(
-  _event: Event,
   row: TableRow<PeerInfo & { geo?: GeoIpResponse }>
 ) {
   // Clear previous selections
@@ -549,8 +548,30 @@ onUnmounted(() => {
             </div>
           </div>
         </template>
-        <div>
+        <div class="map-viewport-wrapper">
           <div ref="mapContainer" class="w-full" :style="{ height: `${mapHeight}px` }"></div>
+          <div class="map-floating-box">
+            <h3 class="map-floating-box__title">Viewport Notes</h3>
+            <p>
+              This panel is anchored to the map viewport's bottom-left corner and remains in place as the
+              viewport scales with the browser window.
+            </p>
+            <p>
+              Scrolling demo content:
+            </p>
+            <ul>
+              <li>Peer marker interactions stay active behind this panel.</li>
+              <li>Resize the window to confirm the fixed corner placement.</li>
+              <li>Inbound peers are shown in orange markers.</li>
+              <li>Outbound peers are shown in blue markers.</li>
+              <li>Open the drawer to inspect per-peer details.</li>
+              <li>Use map click to auto-select rows in the table.</li>
+              <li>Tooltip hover is still available over visible markers.</li>
+              <li>This content intentionally overflows to show scrolling.</li>
+              <li>You can add any custom controls here later.</li>
+              <li>Box size is fixed at 300px by 250px.</li>
+            </ul>
+          </div>
           <div ref="tooltipContainer" class="tooltip"></div>
         </div>
       </card-subtle>
@@ -568,6 +589,41 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.map-viewport-wrapper {
+  position: relative;
+}
+
+.map-floating-box {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  width: 300px;
+  height: 200px;
+  background-color: #fff9c4;
+  border: 2px solid #000000;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  z-index: 750;
+  overflow-y: auto;
+  color: #111111;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.map-floating-box__title {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.map-floating-box ul {
+  margin-top: 8px;
+  padding-left: 18px;
+}
+
+.map-floating-box li {
+  margin-bottom: 4px;
+}
+
 .tooltip {
   position: absolute;
   background-color: rgba(0, 0, 0, 0.8);
