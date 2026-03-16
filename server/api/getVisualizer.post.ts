@@ -34,7 +34,7 @@ interface BitcoinRpcResponse<T> {
   error?: BitcoinRpcError | null;
 }
 
-interface GetMempoolEntryResult extends MempoolTransactionInfo {}
+interface GetMempoolEntryResult extends MempoolTransactionInfo { }
 
 interface RawMempoolVerbose {
   [txid: string]: MempoolTransactionInfo;
@@ -150,6 +150,9 @@ async function getAndUpdateMempoolCache(
 
       for (const [index, response] of responseArray.entries()) {
         const txid = newTxids[index];
+        if (!txid) {
+          continue;
+        }
         try {
           if (response?.error) {
             console.warn(

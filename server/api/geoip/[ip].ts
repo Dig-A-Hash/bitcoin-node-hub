@@ -1,5 +1,6 @@
 import { open, GeoIpDbName } from 'geolite2-redist';
-import maxmind, { CityResponse } from 'maxmind';
+import maxmind from 'maxmind';
+import type { CityResponse } from 'maxmind';
 import { HttpStatusCode } from 'axios';
 
 export default defineEventHandler(async (event) => {

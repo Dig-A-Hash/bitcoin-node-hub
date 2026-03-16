@@ -69,11 +69,10 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
           h(
             'div',
             {
-              class: `text-xs truncate max-w-[150px] mt-0.5 ${
-                protocolVersion < 70015
+              class: `text-xs truncate max-w-[150px] mt-0.5 ${protocolVersion < 70015
                   ? 'dark:text-yellow-500 light:text-red-500 font-bold'
                   : ''
-              }`,
+                }`,
             },
             `Protocol Version: ${protocolVersion}`
           ),
@@ -92,9 +91,8 @@ const columns: TableColumn<PeerInfo & { geo?: GeoIpResponse }>[] = [
             UBadge,
             {
               variant: 'solid',
-              class: `uppercase text-white ${
-                inBound ? 'bg-amber-600' : 'bg-blue-500'
-              }`,
+              class: `uppercase text-white ${inBound ? 'bg-amber-600' : 'bg-blue-500'
+                }`,
               size: 'sm',
             },
             () => (inBound ? 'In' : 'Out')
@@ -146,7 +144,7 @@ const calculateMapHeight = () => {
       parseFloat(getComputedStyle(containerElement).paddingTop) || 0;
     titleHeight =
       titleRect.height +
-        parseFloat(getComputedStyle(titleElement).marginBottom) || 0;
+      parseFloat(getComputedStyle(titleElement).marginBottom) || 0;
     titleHeight += containerPadding; // Account for UContainer's top padding/margin
   }
 
@@ -429,7 +427,10 @@ function renderMap() {
   }
 }
 
-function onSelect(row: TableRow<PeerInfo & { geo?: GeoIpResponse }>) {
+function onSelect(
+  _event: Event,
+  row: TableRow<PeerInfo & { geo?: GeoIpResponse }>
+) {
   // Clear previous selections
   Object.keys(rowSelection.value).forEach((key) => {
     rowSelection.value[Number(key)] = false;
@@ -492,26 +493,14 @@ onUnmounted(() => {
       <span class="flex items-center">
         <span class="text-sm">
           Avg. ping
-          <UBadge
-            color="neutral"
-            variant="subtle"
-            class="ml-1"
-            v-if="avgPingTime !== -1"
-          >
-            {{ avgPingTime.toFixed(2) }} ms</UBadge
-          >
+          <UBadge color="neutral" variant="subtle" class="ml-1" v-if="avgPingTime !== -1">
+            {{ avgPingTime.toFixed(2) }} ms</UBadge>
           <UBadge color="neutral" variant="subtle" class="ml-1" v-else>
             Loading
           </UBadge>
         </span>
 
-        <UBadge
-          size="xl"
-          class="ml-4"
-          color="primary"
-          icon="material-symbols:network-node"
-          variant="subtle"
-        >
+        <UBadge size="xl" class="ml-4" color="primary" icon="material-symbols:network-node" variant="subtle">
           {{ bitcoinStore.nodeNames[nodeIndex]?.name }}
         </UBadge>
       </span>
@@ -532,20 +521,11 @@ onUnmounted(() => {
             </div>
           </div>
           <div v-else-if="combinedPeerData.length" class="overflow-x-auto">
-            <UTable
-              ref="table"
-              sticky
-              :data="combinedPeerData"
-              class="flex-1"
-              :columns="columns"
-              :style="{ height: `${mapHeight}px` }"
-              @select="onSelect"
-              v-model:row-selection="rowSelection"
-              :ui="{
+            <UTable ref="table" sticky :data="combinedPeerData" class="flex-1" :columns="columns"
+              :style="{ height: `${mapHeight}px` }" @select="onSelect" v-model:row-selection="rowSelection" :ui="{
                 tr: 'data-[selected=true]:bg-elevated/100 data-[selected=true]:border-l-2 border-b-1 data-[selected=true]:border-l-green-500',
                 td: 'light:text-gray-700 p-0',
-              }"
-            />
+              }" />
           </div>
           <div v-else class="text-center text-gray-400">
             No peer data available or error occurred
@@ -557,24 +537,20 @@ onUnmounted(() => {
           <div class="p-2 flex justify-between text-sm">
             <div>
               <UBadge size="md" class="bg-amber-600 text-white mr-1">
-                {{ combinedPeerData.filter((item) => item.inbound).length }}
+                {{combinedPeerData.filter((item) => item.inbound).length}}
               </UBadge>
               Incoming
             </div>
             <div>
               Outgoing
               <UBadge size="md" class="bg-blue-500 text-white ml-1">
-                {{ combinedPeerData.filter((item) => !item.inbound).length }}
+                {{combinedPeerData.filter((item) => !item.inbound).length}}
               </UBadge>
             </div>
           </div>
         </template>
         <div>
-          <div
-            ref="mapContainer"
-            class="w-full"
-            :style="{ height: `${mapHeight}px` }"
-          ></div>
+          <div ref="mapContainer" class="w-full" :style="{ height: `${mapHeight}px` }"></div>
           <div ref="tooltipContainer" class="tooltip"></div>
         </div>
       </card-subtle>
@@ -582,23 +558,11 @@ onUnmounted(() => {
   </div>
 
   <!-- Drawer for Peer Details -->
-  <USlideover
-    v-model:open="isDrawerOpen"
-    aria-describedby="undefined"
-    direction="right"
-    :overlay="false"
-    title="Peer Details"
-    :modal="false"
-    class="w-full max-w-md"
-    close-icon="solar:close-square-bold"
-  >
+  <USlideover v-model:open="isDrawerOpen" aria-describedby="undefined" direction="right" :overlay="false"
+    title="Peer Details" :modal="false" class="w-full max-w-md" close-icon="solar:close-square-bold">
     <template #body>
-      <peer-details
-        v-if="selectedPeer"
-        :selected-peer="selectedPeer"
-        :node-index="nodeIndex"
-        @update="fetchPeers"
-      ></peer-details>
+      <peer-details v-if="selectedPeer" :selected-peer="selectedPeer" :node-index="nodeIndex"
+        @update="fetchPeers"></peer-details>
     </template>
   </USlideover>
 </template>
@@ -616,6 +580,7 @@ onUnmounted(() => {
   z-index: 1000;
   width: 200px;
 }
+
 .tooltip-content {
   white-space: normal;
   overflow-wrap: break-word;

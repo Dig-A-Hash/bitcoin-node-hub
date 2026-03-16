@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AxiosInstance } from 'axios';
+import type { AxiosInstance } from 'axios';
 import { destr } from 'destr';
 
 /**
