@@ -108,11 +108,11 @@ server=1
 # Bind only to interfaces you actually need.
 rpcbind=127.0.0.1
 # Example: node LAN IP
-rpcbind=192.168.7.250
+rpcbind=192.168.1.420
 
 # Allow only the Bitcoin Node Hub host.
 # Example: Bitcoin Node Hub host IP
-rpcallowip=192.168.7.251
+rpcallowip=192.168.1.69
 
 # Dedicated read-only RPC user for Bitcoin Node Hub
 rpcauth=bitcoin-node-hub:{SaltedPasswordHash}
