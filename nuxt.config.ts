@@ -15,28 +15,9 @@ export default defineNuxtConfig({
   devServer: {
     port: 3500,
   },
-  nitro: {
-    imports: {
-      presets: [
-        {
-          from: 'zod',
-          imports: [{ name: '*', as: 'z' }],
-        },
-      ],
-    },
-  },
   imports: {
     dirs: ['shared/types'], // Ensure types are scanned
     presets: [
-      {
-        from: 'zod',
-        imports: [
-          {
-            name: '*',
-            as: 'z',
-          },
-        ],
-      },
       {
         from: 'axios',
         imports: [
