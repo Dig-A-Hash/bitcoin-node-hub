@@ -4,6 +4,9 @@ hero:
   name: Bitcoin Node Hub Docs
   text: For Operators and Builders
   tagline: Understand how Bitcoin Node Hub works, how to run it safely, how to audit the code, and how to use Docker support.
+  image:
+    src: https://www.dig-a-hash.com/images/the-cat.webp
+    alt: Dig a Hash cat mascot
   actions:
     - theme: brand
       text: Get Started
