@@ -4,20 +4,21 @@ export default defineConfig({
     title: 'Bitcoin Node Hub Docs',
     description: 'Public documentation for operating and understanding Bitcoin Node Hub.',
     cleanUrls: true,
+    head: [['link', { rel: 'icon', href: '/favicon.ico' }]],
     themeConfig: {
         nav: [
-            { text: 'Getting Started', link: '/guide/getting-started' },
+            { text: 'Get Started', link: '/guide/overview' },
             { text: 'Security', link: '/guide/security' },
-            { text: 'Docker', link: '/guide/docker' },
-            { text: 'Docs Deploy', link: '/guide/deployment-amplify' },
+            { text: 'Audit the Code', link: '/guide/quick-facts' },
         ],
         sidebar: [
             {
                 text: 'Getting Started',
                 items: [
-                    { text: 'Getting Started', link: '/guide/getting-started' },
                     { text: 'Overview', link: '/guide/overview' },
-                    { text: 'Features', link: '/guide/features' },
+                    { text: 'Installation', link: '/guide/installation' },
+                    { text: 'Configuration', link: '/guide/configuration' },
+                    { text: 'Docker Support', link: '/guide/docker' },
                 ],
             },
             {
@@ -25,27 +26,22 @@ export default defineConfig({
                 items: [
                     { text: 'Security', link: '/guide/security' },
                     { text: 'Bitcoin Node Setup', link: '/guide/bitcoin-node-setup' },
-                    { text: 'Configuration', link: '/guide/configuration' },
+
                     { text: 'Authentication', link: '/guide/authentication' },
                 ],
             },
             {
-                text: 'Docker Workflows',
+                text: 'Audit the Code',
                 items: [
-                    { text: 'Docker Support', link: '/guide/docker' },
-                    { text: 'Local Docker Workflow', link: '/guide/local-docker-workflow' },
+                    { text: 'Quick Facts', link: '/guide/quick-facts' },
+                    { text: 'Package References', link: '/guide/package-references' },
+                    { text: 'Code Audit', link: '/guide/code-audit' },
                 ],
             },
             {
                 text: 'Troubleshooting',
                 items: [
                     { text: 'Troubleshooting', link: '/guide/troubleshooting' },
-                ],
-            },
-            {
-                text: 'Docs Site',
-                items: [
-                    { text: 'Amplify Docs Deploy', link: '/guide/deployment-amplify' },
                 ],
             },
         ],

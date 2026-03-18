@@ -2,9 +2,30 @@
 
 Docker is not required to run Bitcoin Node Hub, but the project ships with full Docker support for local workflows and app operations.
 
-## Local development in this repository
+## Create Production Build
 
-Use this exact restart and install sequence from repository root:
+The Bitcoin Node Hub build will be placed in the .output directory.
+
+```bash
+docker run --rm -it -v "$(pwd):/app" -w /app node:24-slim npm run build
+```
+
+The command to run the Bitcoin Node Hub after building is simple.
+
+`node .output/server/index.mjs`
+
+## Run the app locally with Compose
+
+Use the app development service:
+
+```bash
+docker compose up --build
+docker compose up
+```
+
+## Install NPM Packages using Docker
+
+This is useful for development purposes as it will allow the IDE to find packages, and autocomplete function calls from the required packages.
 
 ```bash
 docker compose down
@@ -13,42 +34,20 @@ docker compose up --build
 docker compose up
 ```
 
-## Run docs site locally
 
-```bash
-docker run --rm -it -p 5173:5173 -v "$(pwd):/app" -w /app node:24-slim npm run docs:dev
-```
 
-Or use Compose docs service:
+## Run Docs Site Locally
 
 ```bash
 docker compose up --build docs
 ```
 
-## Build docs static output
+## Build Docs Static Output
+
+This will create a static website for the docs in the docs/dist directory.
 
 ```bash
 docker run --rm -it -v "$(pwd):/app" -w /app node:24-slim npm run docs:build
 ```
 
-## Build app artifacts
 
-```bash
-docker run --rm -it -v "$(pwd):/app" -w /app node:24-slim npm run build
-```
-
-## Run app in non-Docker environments
-
-If you deploy without Docker, use your own runtime process management with equivalent environment variables and security controls.
-
-At minimum, set:
-
-- `NUXT_BITCOIN_NODE_CREDENTIALS` (required)
-- `PORT` (optional)
-
-See `/guide/configuration` for the credentials schema and `/guide/security` for deployment posture.
-
-## Scope reminder
-
-- Docker support in this repository covers app and docs workflows.
-- Amplify deployment docs in `/guide/deployment-amplify` are only for the documentation site.

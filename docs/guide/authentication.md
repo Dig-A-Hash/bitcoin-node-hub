@@ -1,6 +1,6 @@
 # Authentication
 
-Authentication is optional and controlled by `ADMIN_PASSWORD_HASH`.
+Authentication to the Bitcoin Node Hub is optional and controlled by `ADMIN_PASSWORD_HASH`. Authentication is reccomended for most deployments, and it should only be disabled if additional proxies are in place to handle authentication, or if you are an advanced network admin who understands the risk mitigation techniques.
 
 ## Configure auth first (.env or environment variables)
 
@@ -35,6 +35,8 @@ Session lifetime is configured in runtime config (`session.maxAge`) in `nuxt.con
 
 - Unit: seconds
 - Current default in this project: `60 * 60 * 24 * 30` (30 days)
+
+Changing this value will require a new build ```npm run build``` as shown in the installation guide.
 
 ## Environment values
 

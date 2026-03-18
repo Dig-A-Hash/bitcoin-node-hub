@@ -1,30 +1,40 @@
 # Configuration
 
-This page describes required and optional runtime configuration for Bitcoin Node Hub.
+The Bitcoin Node Hub must be configured prior to running. This page describes required and optional runtime configurations.
 
-## Update `.env` first
+## Update `.env`
 
-Edit the `.env` file in the project root before starting the app.
+Create and edit the `.env` file in the project root before starting the app. The Bitcoin Node Hub ships with a `.env.example` file that can be copied, and renamed to '.env.'
+
+This file will contain the secrets needed for the Bitcoin Node Hub to access your nodes. Do not store clear text passwords here.
 
 Add or update `NUXT_BITCOIN_NODE_CREDENTIALS` with a valid JSON array string.
 
 Example:
 
 ```bash
-NUXT_BITCOIN_NODE_CREDENTIALS='[{"name":"Your-Node-1","user":"bitcoinrpc","password":"your-password","host":"192.168.1.420","port":"8332","protocol":"http"},{"name":"Your-Node-2","user":"bitcoinrpc","password":"your-password","host":"192.168.1.69","port":"8332","protocol":"http"}]'
+NUXT_BITCOIN_NODE_CREDENTIALS='[{"name":"Your-Node-1","user":"bitcoinrpc","password":"your-password-hash","host":"192.168.1.420","port":"8332"},{"name":"Your-Node-2","user":"bitcoinrpc","password":"your-password-hash","host":"192.168.1.69","port":"8332"}]'
 ```
 
-Recommended update flow:
+## Use Environment Variables
 
-1. Open `.env`.
-2. Add `NUXT_BITCOIN_NODE_CREDENTIALS` if it is missing.
-3. Replace node values (`name`, `user`, `password`, `host`, `port`, `protocol`) with your real node data.
-4. Keep the value as valid JSON.
-5. Restart the Docker dev environment so Nuxt reloads runtime config.
+You do not need to use a .env file. Optionally, you can also run with  environment variables set on your server:
 
-## Required runtime variable
+```bash
+PORT=3600 NUXT_BITCOIN_NODE_CREDENTIALS='[{"name":"Node-Runner-Exp","user":"bitcoinrpc","password":"your-password-hash","host":"192.168.1.420","port":"8332"},{"name":"Node-Runner","user":"bitcoinrpc","password":"your-password","host":"192.168.1.69","port":"8332"}]' node .output/server/index.mjs
+```
 
-`NUXT_BITCOIN_NODE_CREDENTIALS` is required and must be valid JSON.
+```powershell
+& {
+    $env:PORT = "3600"
+    $env:NUXT_BITCOIN_NODE_CREDENTIALS = '[{"name":"Node-Runner-Exp","user":"bitcoinrpc","password":"your-password-hash","host":"192.168.1.420","port":"8332"},{"name":"Node-Runner","user":"bitcoinrpc","password":"your-password","host":"192.168.1.69","port":"8332"}]'
+    node .output/server/index.mjs
+}
+```
+
+## Required Credential Schema
+
+`NUXT_BITCOIN_NODE_CREDENTIALS` is required and must be valid JSON array.
 
 Example:
 
@@ -33,18 +43,16 @@ Example:
   {
     "name": "Your-Node-1",
     "user": "bitcoinrpc",
-    "password": "your-password",
+    "password": "your-password-hash",
     "host": "192.168.1.420",
     "port": "8332",
-    "protocol": "http"
   },
   {
     "name": "Your-Node-2",
     "user": "bitcoinrpc",
-    "password": "your-password",
+    "password": "your-password-hash",
     "host": "192.168.1.69",
     "port": "8332",
-    "protocol": "http"
   }
 ]
 ```
@@ -56,34 +64,16 @@ Field notes:
 - `password`: RPC password.
 - `host`: node host or IP.
 - `port`: node RPC port.
-- `protocol`: usually `http` unless you have secured transport in front.
 
 ## Optional runtime variables
 
-- `PORT`: app listening port.
-- `ADMIN_PASSWORD_HASH`: enables app login when set.
-- `NUXT_SESSION_PASSWORD`: required when auth is enabled; should be at least 32 characters.
-
-## Runtime example
-
-You can also run with inline environment variables:
-
-```bash
-PORT=3600 NUXT_BITCOIN_NODE_CREDENTIALS='[{"name":"Node-Runner-Exp","user":"bitcoinrpc","password":"your-password","host":"192.168.1.420","port":"8332"},{"name":"Node-Runner","user":"bitcoinrpc","password":"your-password","host":"192.168.1.69","port":"8332","protocol":"http"}]' node .output/server/index.mjs
-```
-
-The `NUXT_BITCOIN_NODE_CREDENTIALS` value must be a valid JSON array.
+- `PORT`: Bitcoin Node Hub listening port.
+- `ADMIN_PASSWORD_HASH`: Enables a login screen in the Bitcoin Node Hub when set.
+- `NUXT_SESSION_PASSWORD`: Required when auth is enabled; should be at least 32 characters.
 
 For auth setup details (`ADMIN_PASSWORD_HASH`, `NUXT_SESSION_PASSWORD`, and session behavior), see `/guide/authentication`.
 
 ## Safety guidance
 
-- Never commit plaintext credentials.
-- Keep node RPC users dedicated and narrowly permissioned.
-- Restrict network access to trusted hosts only.
+- Never use or commit plaintext credentials to source control.
 
-## Related docs
-
-- `/guide/bitcoin-node-setup`
-- `/guide/security`
-- `/guide/docker`
