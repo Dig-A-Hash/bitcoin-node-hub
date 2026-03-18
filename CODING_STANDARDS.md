@@ -7,6 +7,8 @@ This project standard keeps maintenance predictable and safe.
 - Local workflow is Docker-only.
 - Do not run Node.js or npm directly on host.
 - Use README Docker commands for install/run/preload.
+- For dev environment restart, use this exact sequence unless explicitly approved otherwise: `docker compose down` -> `docker run --rm -it -v "$(pwd):/app" -w /app node:24-slim npm install` -> `docker compose up --build` -> `docker compose up`.
+- Do not use alternate Docker workflows, extra flags, or destructive variants unless the user explicitly approves first.
 - Never read local .env files because they contain secrets.
 - If env details are needed, use the schema documented in README.
 
@@ -67,3 +69,4 @@ This project standard keeps maintenance predictable and safe.
 - Update maintainer docs when adding routes/endpoints/stores.
 - Add troubleshooting entries for new failure modes.
 - Keep README user-focused and maintainer detail in maintainer docs.
+- When dependencies are added, removed, or replaced in `package.json`, update the README package list in the same change.

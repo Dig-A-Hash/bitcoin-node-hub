@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui';
-import type { NodeName } from '~~/shared/types/nodeName';
 
 /**
  * node.host will not exist if there is a problem
@@ -9,6 +8,10 @@ import type { NodeName } from '~~/shared/types/nodeName';
 const bitcoinStore = useBitcoin();
 const isCollapsed = ref(false);
 const bitcoinNodes = computed(() => bitcoinStore.nodeNames); // Reactively sync with nodeNames
+const runtimeConfig = useRuntimeConfig();
+const authEnabled = computed(() => runtimeConfig.public.authEnabled);
+const { loggedIn, ready, fetch: fetchUserSession, clear: clearUserSessionState } = useUserSession();
+const isFetchingSession = ref(false);
 
 // State to control mobile menu drawer
 const isMobileMenuOpen = ref(false);
@@ -16,130 +19,166 @@ const isMobileMenuOpen = ref(false);
 const disabledStates = computed(() =>
   bitcoinNodes.value.map((node) => (!node.isError ? node.isIbd : true))
 );
+const canShowNavigation = computed(() => !authEnabled.value || (ready.value && loggedIn.value));
 
-// Navigation items
-const navItems = ref<NavigationMenuItem[]>([
-  {
-    label: 'Dashboard',
-    icon: 'material-symbols:dashboard',
-    class: 'p-3 my-1',
-    to: '/',
-    tooltip: {
-      text: 'Dashboard',
-    },
-    onSelect: () => {
-      isMobileMenuOpen.value = false; // Close the slideover
-    },
-  },
-] satisfies NavigationMenuItem[]);
+async function ensureUserSessionReady() {
+  if (!authEnabled.value || ready.value || isFetchingSession.value) {
+    return;
+  }
 
-// Watch bitcoinNodes and append to navItems
-watch(
-  bitcoinNodes,
-  (newNodes: NodeName[]) => {
-    const nodeItems: NavigationMenuItem[] = newNodes.map((node, index) => ({
-      label: node.name || `Node ${index}`, // Assuming node has a 'name' property
+  isFetchingSession.value = true;
+
+  try {
+    await fetchUserSession();
+  } finally {
+    isFetchingSession.value = false;
+  }
+}
+
+onMounted(async () => {
+  await ensureUserSessionReady();
+});
+
+async function handleLogout() {
+  try {
+    await $fetch<ApiResponse<{ loggedOut: boolean }>>('/api/logout', {
+      method: 'POST',
+    });
+  } finally {
+    await clearUserSessionState();
+    isMobileMenuOpen.value = false;
+    await navigateTo('/login');
+  }
+}
+
+const navItems = computed<NavigationMenuItem[]>(() => {
+  if (!canShowNavigation.value) {
+    return [];
+  }
+
+  const items: NavigationMenuItem[] = [
+    {
+      label: 'Dashboard',
+      icon: 'material-symbols:dashboard',
       class: 'p-3 my-1',
+      to: '/',
       tooltip: {
-        text: node.name,
+        text: 'Dashboard',
       },
-      disabled: disabledStates.value[index],
-      slot: 'components' as const,
-      children: node.isError
-        ? undefined
-        : [
-          {
-            label: 'System Info',
-            to: `/system/${index}`,
-            onSelect: () => {
-              isMobileMenuOpen.value = false;
-            },
-          },
-          {
-            label: 'Mempool',
-            to: `/mempool/${index}`,
-            onSelect: () => {
-              isMobileMenuOpen.value = false;
-            },
-          },
-          {
-            label: 'Peers',
-            to: `/peers/${index}`,
-            onSelect: () => {
-              isMobileMenuOpen.value = false;
-            },
-          },
-          {
-            label: 'Bans',
-            to: `/ban/${index}`,
-            onSelect: () => {
-              isMobileMenuOpen.value = false;
-            },
-          },
-        ],
       onSelect: () => {
-        isCollapsed.value = false;
         isMobileMenuOpen.value = false;
       },
-    }));
+    },
+  ];
 
-    if (navItems.value[0]) {
-      navItems.value = [
-        navItems.value[0], // Keep Dashboard
-        ...nodeItems,
-      ];
+  const nodeItems: NavigationMenuItem[] = bitcoinNodes.value.map((node, index) => ({
+    label: node.name || `Node ${index}`, // Assuming node has a 'name' property
+    class: 'p-3 my-1',
+    tooltip: {
+      text: node.name,
+    },
+    disabled: disabledStates.value[index],
+    slot: 'components' as const,
+    children: node.isError
+      ? undefined
+      : [
+        {
+          label: 'System Info',
+          to: `/system/${index}`,
+          onSelect: () => {
+            isMobileMenuOpen.value = false;
+          },
+        },
+        {
+          label: 'Mempool',
+          to: `/mempool/${index}`,
+          onSelect: () => {
+            isMobileMenuOpen.value = false;
+          },
+        },
+        {
+          label: 'Peers',
+          to: `/peers/${index}`,
+          onSelect: () => {
+            isMobileMenuOpen.value = false;
+          },
+        },
+        {
+          label: 'Bans',
+          to: `/ban/${index}`,
+          onSelect: () => {
+            isMobileMenuOpen.value = false;
+          },
+        },
+      ],
+    onSelect: () => {
+      isCollapsed.value = false;
+      isMobileMenuOpen.value = false;
+    },
+  }));
+
+  items.push(...nodeItems);
+
+  if (bitcoinNodes.value.length) {
+    items.push({
+      label: 'Settings',
+      icon: 'material-symbols:settings',
+      class: 'p-3 my-1',
+      to: '/settings',
+      tooltip: {
+        text: 'Settings',
+      },
+      onSelect: () => {
+        isMobileMenuOpen.value = false; // Close the slideover
+      },
+    });
+
+    items.push({
+      label: 'About',
+      icon: 'material-symbols:person-play-rounded',
+      class: 'p-3 my-1',
+      to: '/about',
+      tooltip: {
+        text: 'About',
+      },
+      onSelect: () => {
+        isMobileMenuOpen.value = false; // Close the slideover
+      },
+    });
+
+    if (authEnabled.value && loggedIn.value) {
+      items.push({
+        label: 'Logout',
+        icon: 'material-symbols:logout',
+        class: 'p-3 my-1',
+        onSelect: () => {
+          void handleLogout();
+        },
+        tooltip: {
+          text: 'Logout',
+        },
+      });
     }
 
-    if (
-      !navItems.value.find((item) => item.label === 'Settings') &&
-      newNodes.length
-    ) {
-      // Append remaining static items
-      navItems.value.push({
-        label: 'Settings',
-        icon: 'material-symbols:settings',
-        class: 'p-3 my-1',
-        to: '/settings',
-        tooltip: {
-          text: 'Settings',
-        },
-        onSelect: () => {
-          isMobileMenuOpen.value = false; // Close the slideover
-        },
-      });
+    items.push({
+      label: 'Collapse Menu',
+      icon: computed(() =>
+        isCollapsed.value
+          ? 'material-symbols:keyboard-double-arrow-right'
+          : 'material-symbols:keyboard-double-arrow-left'
+      ) as unknown as string,
+      class: 'p-3 my-1 hidden lg:flex',
+      tooltip: {
+        text: 'Expand menu',
+      },
+      onSelect: () => {
+        isCollapsed.value = !isCollapsed.value;
+      },
+    });
+  }
 
-      navItems.value.push({
-        label: 'About',
-        icon: 'material-symbols:person-play-rounded',
-        class: 'p-3 my-1',
-        to: '/about',
-        tooltip: {
-          text: 'About',
-        },
-        onSelect: () => {
-          isMobileMenuOpen.value = false; // Close the slideover
-        },
-      });
-
-      navItems.value.push({
-        label: 'Collapse Menu',
-        icon: computed(() =>
-          isCollapsed.value
-            ? 'material-symbols:keyboard-double-arrow-right'
-            : 'material-symbols:keyboard-double-arrow-left'
-        ) as unknown as string,
-        class: 'p-3 my-1 hidden lg:flex',
-        tooltip: {
-          text: 'Expand menu',
-        },
-        onSelect: () => {
-          isCollapsed.value = !isCollapsed.value;
-        },
-      });
-    }
-  },
-  { immediate: true, deep: true }
-);
+  return items;
+});
 
 // Toggle drawer function
 const toggleDrawer = () => {
@@ -162,7 +201,8 @@ function getNodeIconColor(index: number) {
 <template>
   <div class="flex min-h-screen">
     <!-- Sidebar for large screens -->
-    <aside class="hidden lg:block border-r border-accented/50 dark:bg-elevated/50 light:bg-elevated/60"
+    <aside v-if="canShowNavigation"
+      class="hidden lg:block border-r border-accented/50 dark:bg-elevated/50 light:bg-elevated/60"
       :class="`${isCollapsed ? 'w-16' : 'w-64'}`">
       <div class="flex items-center p-3 justify-center">
         <UIcon size="32" name="bitcoin-icons:bitcoin-circle-filled"
@@ -186,7 +226,8 @@ function getNodeIconColor(index: number) {
       <header
         class="dark:bg-elevated/50 light:bg-elevated/60 border-b border-accented/50 flex justify-between items-center">
         <div class="flex items-center">
-          <UButton color="secondary" variant="ghost" @click="toggleDrawer" class="mr-4 rounded-none p-3 lg:hidden">
+          <UButton v-if="canShowNavigation" color="secondary" variant="ghost" @click="toggleDrawer"
+            class="mr-4 rounded-none p-3 lg:hidden">
             <UIcon size="28" name="solar:hamburger-menu-linear" />
           </UButton>
           <UIcon size="32" name="bitcoin-icons:bitcoin-circle-filled"
@@ -197,8 +238,8 @@ function getNodeIconColor(index: number) {
       </header>
 
       <!-- Nav Drawer for smaller screens -->
-      <USlideover v-model:open="isMobileMenuOpen" :ui="{ content: 'w-64', body: 'p-2 sm:p-2' }" side="left"
-        title="Bitcoin Node Hub" class="lg:hidden">
+      <USlideover v-if="canShowNavigation" v-model:open="isMobileMenuOpen" :ui="{ content: 'w-64', body: 'p-2 sm:p-2' }"
+        side="left" title="Bitcoin Node Hub" class="lg:hidden">
         <template #body>
           <UNavigationMenu :items="navItems" orientation="vertical" color="secondary" class="w-full">
             <template #components-leading="{ index }">

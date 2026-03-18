@@ -90,6 +90,85 @@ The NUXT_BITCOIN_NODE_CREDENTIALS must be a valid JSON array.
 ]
 ```
 
+## Optional Admin Authentication
+
+Authentication is optional and controlled only by `ADMIN_PASSWORD_HASH`.
+
+- If `ADMIN_PASSWORD_HASH` is set, the app requires login for all routes except `/login`.
+- If `ADMIN_PASSWORD_HASH` is empty or unset, authentication is disabled and the app is fully public.
+
+When authentication is enabled, set a strong `NUXT_SESSION_PASSWORD` (at least 32 characters) to seal session cookies.
+
+### Configure Session Lifetime
+
+Session lifetime is configured in `runtimeConfig.session.maxAge` in `nuxt.config.ts`.
+
+- Unit: seconds
+- Current value: `60 * 60 * 24 * 30` (30 days)
+- Behavior: with `maxAge` set, login sessions persist across browser restarts until expiration; without `maxAge`, sessions typically end when the browser session ends.
+
+Example:
+
+```ts
+session: {
+  password: process.env.NUXT_SESSION_PASSWORD || '',
+  maxAge: 60 * 60 * 24 * 30,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+  },
+},
+```
+
+To change duration, update the expression and restart the Docker dev environment so runtime config is reloaded.
+
+### Update `.env`
+
+Add or update these values in your `.env` file:
+
+```bash
+# Required for cookie session sealing when auth is enabled
+NUXT_SESSION_PASSWORD=replace-with-at-least-32-characters
+
+# Leave empty to disable auth, set to a hash to enable auth
+ADMIN_PASSWORD_HASH=
+```
+
+How to apply this safely:
+
+1. Open `.env` in your editor.
+2. Add the two keys above if they are missing.
+3. Keep `ADMIN_PASSWORD_HASH` empty to keep the app public.
+4. Paste a generated hash into `ADMIN_PASSWORD_HASH` to require login.
+5. Restart the Docker dev environment after changes so Nuxt reloads runtime config.
+
+### Generate `ADMIN_PASSWORD_HASH`
+
+Generate the hash from Docker so no plaintext password is stored in project files:
+
+```bash
+docker compose run --rm dev node -e 'import("@adonisjs/hash").then(async ({ Hash }) => { const { Scrypt } = await import("@adonisjs/hash/drivers/scrypt"); const password = process.argv[1]; if (!password) throw new Error("Pass password as the first argument."); const hash = new Hash(new Scrypt({})); console.log(await hash.make(password)); })' "replace-with-strong-password"
+```
+
+The command prints exactly one hash string. Use that full output as `ADMIN_PASSWORD_HASH`.
+
+Example output:
+
+```text
+$scrypt$n=16384,r=8,p=1$j9m0D38OkncmqL86Y2bGeA$Y8g+CIY5A4obAnx3qKPvuUnGikugu9Kmq1W6XEiuqsc0y0oLAxlwaCyrI47nr2N32oHm5e50DFxxVQ7gBJSAVg
+```
+
+Set it like this (copy the entire line, including all `$` separators):
+
+```bash
+ADMIN_PASSWORD_HASH='$scrypt$n=16384,r=8,p=1$j9m0D38OkncmqL86Y2bGeA$Y8g+CIY5A4obAnx3qKPvuUnGikugu9Kmq1W6XEiuqsc0y0oLAxlwaCyrI47nr2N32oHm5e50DFxxVQ7gBJSAVg'
+```
+
+If your terminal wraps the output onto multiple visual lines, it is still a single hash value.
+
+Set the generated output as `ADMIN_PASSWORD_HASH` in your environment configuration.
+
+This follows the same security approach recommended for node RPC credentials: store only a hash, never a plaintext password.
+
 ## Node Config
 
 Connecting to nodes requires specific settings in the Bitcoin configuration file on each node. For Bitcoin Node Hub, the safer approach is to use `rpcauth` with a dedicated read-only RPC user, bind only to the interfaces you actually need, and whitelist only the RPC methods required by the app.
@@ -215,6 +294,7 @@ curl -v --user {USERNAME}:{PASSWORD} \
 - [destr](https://github.com/unjs/destr)
 - [iconify](https://github.com/iconify/icon-sets)
 - [Nuxt](https://github.com/nuxt/nuxt)
+- [Nuxt Auth Utils](https://github.com/atinux/nuxt-auth-utils)
 - [Nuxt UI](https://github.com/nuxt/ui)
 - [Pinia](https://github.com/vuejs/pinia)
 - [pinia-persisted-state](https://codeberg.org/praz/pinia-plugin-persistedstate/)

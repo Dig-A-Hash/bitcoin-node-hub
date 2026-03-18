@@ -114,3 +114,18 @@ Checks:
 - Confirm `docker compose up --build` runs cleanly.
 - Confirm mapping host `3200` to container `3000`.
 - Confirm HMR port `24678` exposure for live reload.
+
+## 9) Login Endpoint Returns 403
+
+Symptoms:
+- `POST /api/login` returns 403.
+- Login page cannot authenticate.
+
+Likely causes:
+- `ADMIN_PASSWORD_HASH` is missing or empty.
+- Optional authentication is currently disabled by configuration.
+
+Checks:
+- Set a valid `ADMIN_PASSWORD_HASH` to enable authentication.
+- Confirm `NUXT_SESSION_PASSWORD` is set when authentication is enabled.
+- Regenerate `ADMIN_PASSWORD_HASH` if you suspect a bad value.
