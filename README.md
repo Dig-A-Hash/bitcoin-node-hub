@@ -21,17 +21,6 @@ Zoom in, navigate, and map, peer geographic locations. Ban peers from here as ne
 The mempool visualizer helps us understand what is in the mempool at a glance, or drill down into individual transactions. The spam, fees, and sizes of data in the mempool are also shown here.
 ![Bitcoin Node Hub Mempool Visualizer](https://i.imgur.com/uN5lKwL.png)
 
-## Data Flow
-
-This app runs a server-side API that will make clear text http calls to the bitcoin-cli running on a Bitcoin Node.
-
-**Important**: Connecting to Bitcoin Nodes over the internet is very insecure due to making clear-text http API calls to each node. This will expose the credentials to your node unless you encrypt the traffic yourself. Bitcoin Nodes do not support SSL/TLS at the server. Therefore other forms of modern encryption for connecting to nodes securely, like:
-
-- Stunnel or nginx as a reverse proxy to wrap RPC in TLS.
-- SSH tunneling for secure access.
-- Third-party tools like RPC over Tor.
-- VPN
-
 ## Disclaimer
 
 We strongly recommend using this application only in controlled environments by advanced network administrators with expertise in network security.
