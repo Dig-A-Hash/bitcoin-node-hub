@@ -2,6 +2,15 @@
 
 Bitcoin Node Hub is used to monitor and view information about multiple Bitcoin nodes. This is particularly useful for managing low-power, headless nodes that lack a dedicated monitor. Key features include real-time blockchain info, connection details including a geographic map of peers, sync status, ban management, Mempool visualization, spam tacking, transaction querying and more.
 
+## Documentation
+
+Detailed public documentation is available in the VitePress docs site under `docs/`.
+
+- Start here: `docs/guide/getting-started.md`
+- Security posture: `docs/guide/security.md`
+- Docker commands and support: `docs/guide/docker.md`
+- Amplify deployment for docs site only: `docs/guide/deployment-amplify.md`
+
 ## Dashboard
 
 The dashboard shows important status metrics for each node.
@@ -32,11 +41,15 @@ This app runs a server-side API that will make clear text http calls to the bitc
 
 We strongly recommend using this application only in controlled testing environments with test nodes or by advanced web administrators with expertise in network security.
 
+Bitcoin Node Hub is intended for self-hosted/private hardware. Do not expose this app or node RPC interfaces directly to the public internet unless you have strong transport and network protections in place.
+
 Use this software at your own risk. The developers and contributors are not liable for any damages, losses, or security issues arising from its use. Always exercise caution, thoroughly review the code, and your security plan before deployment.
 
 ## Dependencies
 
 This app requires [Node.js](https://nodejs.org/en), the latest version is always recommended. At least 1 Bitcoin Node is required. This app is only tested with [Bitcoin Knots](https://bitcoinknots.org/) for now, but any modern Bitcoin Node should work.
+
+Docker is optional for deploying the app runtime, but this project ships with full Docker support for local development and operational workflows.
 
 ## Installation
 
@@ -260,6 +273,8 @@ Start the dev server in a new terminal window using.
 ## Docker Support
 
 Install Docker Desktop, get it running then install the app using docker.
+
+Docker is not required for every deployment model, but it is fully supported and is the standard local workflow in this repository.
 
 ### Install NPM Packages using Docker
 

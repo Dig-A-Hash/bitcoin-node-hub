@@ -23,6 +23,15 @@ Purpose: this document is a fast, practical reference for maintaining and extend
 
 Use these containerized commands locally:
 
+Required restart and install sequence for this repository (must be followed unless explicitly approved otherwise):
+
+```bash
+docker compose down
+docker run --rm -it -v "$(pwd):/app" -w /app node:24-slim npm install
+docker compose up --build
+docker compose up
+```
+
 - Install packages in container:
 
 ```bash
@@ -58,6 +67,25 @@ General script pattern (still containerized):
 ```bash
 docker run --rm -it -v "$(pwd):/app" -w /app node:24-slim npm run <script>
 ```
+
+VitePress docs commands (containerized):
+
+```bash
+docker run --rm -it -p 5173:5173 -v "$(pwd):/app" -w /app node:24-slim npm run docs:dev
+docker run --rm -it -v "$(pwd):/app" -w /app node:24-slim npm run docs:build
+docker run --rm -it -p 4173:4173 -v "$(pwd):/app" -w /app node:24-slim npm run docs:preview
+```
+
+Compose-based docs dev container (shows up in Docker Desktop for one-click start/stop):
+
+```bash
+docker compose up --build docs
+```
+
+Docs dev URL with compose service:
+- http://localhost:3201
+
+Do not run npm or node on the host machine.
 
 ## 3) Runtime Configuration
 
@@ -223,3 +251,17 @@ When modifying polling:
 - `RELEASE_CHECKLIST.md`: versioning, validation, and release gate checklist.
 - `TROUBLESHOOTING_MATRIX.md`: symptom-to-diagnosis guide.
 - `CODING_STANDARDS.md`: coding conventions and API/error patterns.
+
+## 15) Docs Site and Amplify Deployment
+
+Docs site location:
+- `docs/`
+
+VitePress configuration:
+- `docs/.vitepress/config.ts`
+
+Amplify deployment model:
+- Deploy docs as a separate Amplify app from this same repository.
+- Use docs-only build command: `npm run docs:build`.
+- Publish only: `docs/.vitepress/dist`.
+- Keep monorepo mode disabled when using the root package setup.

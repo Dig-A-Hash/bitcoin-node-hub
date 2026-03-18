@@ -12,3 +12,15 @@ services:
       - NODE_ENV=development
       - NITRO_HOST=0.0.0.0
       - NITRO_PORT=3000
+
+  docs:
+    build: .
+    container_name: bitcoin-node-hub-docs
+    command: npm run docs:dev
+    ports:
+      - "3201:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
