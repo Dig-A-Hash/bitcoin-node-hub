@@ -70,14 +70,42 @@ const versionStats = computed<VersionStat[]>(() => {
   });
 });
 
+function getVersionCategory(version: string): 'knots' | 'core30plus' | 'other' {
+  if (version.toLowerCase().includes('knots')) return 'knots';
+  const match = version.match(/Satoshi:(\d+)\./i);
+  if (match && parseInt(match[1]) >= 30) return 'core30plus';
+  return 'other';
+}
+
 const versionColorMap = computed<Record<string, string>>(() => {
   const colors: Record<string, string> = {};
-  const total = Math.max(versionStats.value.length, 1);
 
-  versionStats.value.forEach((entry, index) => {
-    const hue = Math.round((index * 360) / total);
-    colors[entry.version] = `hsl(${hue}, 72%, 46%)`;
+  const groups: Record<'knots' | 'core30plus' | 'other', string[]> = {
+    knots: [],
+    core30plus: [],
+    other: [],
+  };
+
+  versionStats.value.forEach((entry) => {
+    groups[getVersionCategory(entry.version)].push(entry.version);
   });
+
+  const assignShades = (
+    versions: string[],
+    hue: number,
+    lightnessStart: number,
+    lightnessEnd: number
+  ) => {
+    versions.forEach((v, i) => {
+      const t = versions.length === 1 ? 0.5 : i / (versions.length - 1);
+      const lightness = Math.round(lightnessStart + t * (lightnessEnd - lightnessStart));
+      colors[v] = `hsl(${hue}, 72%, ${lightness}%)`;
+    });
+  };
+
+  assignShades(groups.knots, 130, 35, 55);     // green shades — Knots
+  assignShades(groups.core30plus, 5, 40, 60);  // red shades   — Core v30+
+  assignShades(groups.other, 215, 35, 55);     // blue shades  — everything else
 
   return colors;
 });
