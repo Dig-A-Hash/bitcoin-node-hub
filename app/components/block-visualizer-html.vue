@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-
 const route = useRoute();
 const nodeIndex = parseInt(route.params.i?.toString() || '');
 const appSettings = useAppSettings();
@@ -53,6 +51,26 @@ function resetBlockTimer(blockTime?: number) {
   }
   updateBlockTimer();
 }
+
+const formattedTime = computed(() => {
+  const sec = Math.max(Math.floor(timeRemaining.value), -999999);
+  if (sec <= 0) {
+    const over = Math.abs(sec);
+    const m = Math.floor(over / 60);
+    const s = over % 60;
+    return `+${m}:${String(s).padStart(2, '0')}`;
+  }
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+});
+
+const progressColor = computed(() => {
+  const isOverLimit = progressValue.value >= 100;
+  const isNearEnd = timeRemaining.value <= 60; // last minute
+  if (isOverLimit || isNearEnd) return 'error';
+  return 'warning';
+});
 
 watch(
   () => visualizerData.value.blocks[0]?.height,
@@ -170,7 +188,7 @@ onBeforeUnmount(() => {
           Showing top
           <UBadge color="neutral" variant="subtle" size="xl">{{
             visualizerData.transactions.length
-          }}</UBadge>
+            }}</UBadge>
           txs ordered by fee.
           <!-- <UTooltip text="Next Block Timer">
             <UProgress v-model="progressValue" color="warning" class="mt-4" />
@@ -287,7 +305,7 @@ onBeforeUnmount(() => {
             {{ formattedTime }}
           </p>
           <div class="text-gray-500">Time to Next Block</div>
-          <UProgress v-model="progressValue" color="warning" size="sm" class="mt-2" />
+          <UProgress v-model="progressValue" :color="progressColor" size="sm" class="mt-2" />
         </div>
       </card-subtle>
     </div>
