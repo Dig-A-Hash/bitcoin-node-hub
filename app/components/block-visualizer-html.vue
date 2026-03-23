@@ -140,17 +140,11 @@ onBeforeUnmount(() => {
         </div>
       </template>
       <div class="p-4 h-84">
-        <div
-          class="flex flex-row flex-wrap space-x-1 space-y-1 overflow-y-auto w-full max-h-78"
-          v-if="!isLoading"
-        >
+        <div class="flex flex-row flex-wrap space-x-1 space-y-1 overflow-y-auto w-full max-h-78" v-if="!isLoading">
           <template v-for="tx in visualizerData.transactions" :key="tx.txid">
             <UPopover mode="hover" :open-delay="500">
-              <div
-                :class="getBlockColor(tx.feePerVbyte)"
-                class="w-3 h-3 cursor-pointer rounded-xs"
-                @click="openTxDetails(tx.txid)"
-              ></div>
+              <div :class="getBlockColor(tx.feePerVbyte)" class="w-3 h-3 cursor-pointer rounded-xs"
+                @click="openTxDetails(tx.txid)"></div>
               <template #content>
                 <div class="p-4 text-sm">
                   <div>TXID: {{ tx.txid.substring(0, 8) }}...</div>
@@ -178,9 +172,9 @@ onBeforeUnmount(() => {
             visualizerData.transactions.length
           }}</UBadge>
           txs ordered by fee.
-          <UTooltip text="Next Block Timer">
+          <!-- <UTooltip text="Next Block Timer">
             <UProgress v-model="progressValue" color="warning" class="mt-4" />
-          </UTooltip>
+          </UTooltip> -->
         </div>
       </template>
     </card-subtle>
@@ -287,20 +281,15 @@ onBeforeUnmount(() => {
 
       <!-- Timer Card -->
 
-      <!-- <card-subtle>
+      <!-- --><card-subtle>
         <div class="p-4">
           <p :class="textDataSize">
             {{ formattedTime }}
           </p>
           <div class="text-gray-500">Time to Next Block</div>
-          <UProgress
-            v-model="progressValue"
-            color="warning"
-            size="sm"
-            class="mt-2"
-          />
+          <UProgress v-model="progressValue" color="warning" size="sm" class="mt-2" />
         </div>
-      </card-subtle> -->
+      </card-subtle>
     </div>
   </div>
 </template>
