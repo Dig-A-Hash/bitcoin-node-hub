@@ -4,15 +4,27 @@ interface CachedMempool {
   txs: Map<string, MempoolTransactionInfo>;
 }
 
+// Lightweight data stored for low-priority transactions (only summary fields needed)
+interface LowPriorityTxData {
+  vsize: number;
+  feePerVbyte: number;
+}
+
+// Categorized data cache — highPriority as full Transaction[], low-priority as lightweight Maps
+interface CategorizedData {
+  highPriority: Transaction[];
+  lowFee: Map<string, LowPriorityTxData>;
+  ordinals: Map<string, LowPriorityTxData>;
+  anomalous: Map<string, LowPriorityTxData>;
+  minCutoffFee: number; // Fee floor of the lowest-fee tx in the bounded highPriority buffer
+}
+
 // Define caches outside the handler (global to the server process)
 const mempoolCache = new Map<number, CachedMempool>();
 const blocksCache = new Map<number, Block[]>();
-const categoriesCache = new Map<
-  string,
-  { [key in TransactionCategory]: Transaction[] }
->();
+const categoriesCache = new Map<string, CategorizedData>();
 
-// Define low-priority transaction categories
+// Define low-priority transaction categories (response shape)
 interface LowPriorityCategory {
   count: number;
   totalVsize: number;
@@ -82,9 +94,60 @@ function categorizeTransaction(
 }
 
 /**
+ * Fetches mempool entry details in chunks via batch RPC.
+ * Used by both cold-start and warm-start paths to avoid oversized single requests.
+ * @param txids - Array of transaction IDs to fetch.
+ * @param rpcClient - The Bitcoin RPC client.
+ * @param cachedMempool - The cached mempool to populate with results.
+ */
+async function batchFetchMempoolEntries(
+  txids: string[],
+  rpcClient: BitcoinRpcClient,
+  cachedMempool: CachedMempool
+): Promise<void> {
+  const chunkSize = AppConstants.BATCH_CHUNK_SIZE;
+  for (let i = 0; i < txids.length; i += chunkSize) {
+    const chunk = txids.slice(i, i + chunkSize);
+    const batchRequests = chunk.map((txid, index) => ({
+      jsonrpc: '1.0',
+      id: `getmempoolentry-${i + index}`,
+      method: 'getmempoolentry',
+      params: [txid],
+    }));
+
+    const responseArray: BitcoinRpcResponse<GetMempoolEntryResult>[] =
+      await rpcClient.batchRpc(batchRequests);
+
+    for (const [index, response] of responseArray.entries()) {
+      const txid = chunk[index];
+      if (!txid) continue;
+      try {
+        if (response?.error) {
+          console.warn(
+            `Failed to fetch mempool entry for ${txid}: RPC error ${response.error.code}: ${response.error.message}`
+          );
+          continue;
+        }
+        if (!response?.result) {
+          console.warn(
+            `Invalid response for mempool entry ${txid}: No result`
+          );
+          continue;
+        }
+        cachedMempool.txs.set(txid, response.result);
+      } catch (e: any) {
+        console.warn(
+          `Unexpected error processing mempool entry ${txid}: ${e.message}`
+        );
+      }
+    }
+  }
+}
+
+/**
  * Gets and updates the mempool cache for the given node and block count.
- * On cold starts (new height), fetches full verbose mempool.
- * On warm starts, fetches txids and verbose details for new txs only.
+ * On cold starts (new height), fetches txid list and batch-fetches details in chunks.
+ * On warm starts, fetches txids and batch-fetches new entries in chunks.
  * @param nodeIndex - The Bitcoin node index.
  * @param blockCount - The current block count.
  * @param rpcClient - The Bitcoin RPC client.
@@ -104,23 +167,19 @@ async function getAndUpdateMempoolCache(
       txs: new Map<string, MempoolTransactionInfo>(),
     };
     mempoolCache.set(nodeIndex, cachedMempool);
-    // Also reset categories for new height
     const cacheKey = `${nodeIndex}_${blockCount}`;
     categoriesCache.delete(cacheKey);
 
-    // Cold start: Fetch full verbose mempool (single RPC call)
-    const mempool: RawMempoolVerbose = await rpcClient.mempool.getRawMempool(
-      true
-    );
+    // Cold start: Fetch txid list (lightweight), then batch-fetch details in chunks
+    const mempoolTxids: string[] = (await rpcClient.mempool.getRawMempool(
+      false
+    )) as unknown as string[];
 
-    // Populate cache from full mempool
-    for (const [txid, details] of Object.entries(mempool)) {
-      cachedMempool.txs.set(txid, details);
-    }
+    await batchFetchMempoolEntries(mempoolTxids, rpcClient, cachedMempool);
 
-    const currentTxids = new Set(Object.keys(mempool));
-    const newTxids: string[] = [...currentTxids]; // All are new on cold start
-    const removedTxids: string[] = []; // None on cold start
+    const currentTxids = new Set(mempoolTxids);
+    const newTxids: string[] = mempoolTxids;
+    const removedTxids: string[] = [];
 
     return { cachedMempool, currentTxids, newTxids, removedTxids };
   } else {
@@ -129,7 +188,6 @@ async function getAndUpdateMempoolCache(
       false
     )) as unknown as string[];
 
-    // Identify new and removed txids
     const currentTxids = new Set(mempoolTxids);
     const cachedTxids = new Set(cachedMempool?.txs.keys());
     const newTxids = [...currentTxids].filter((txid) => !cachedTxids.has(txid));
@@ -137,42 +195,9 @@ async function getAndUpdateMempoolCache(
       (txid) => !currentTxids.has(txid)
     );
 
-    // Fetch verbose details for new txs via batch getmempoolentry - simdjson in batchRpc speeds up parse
+    // Batch-fetch details for new txs in chunks
     if (newTxids.length > 0) {
-      const batchRequests = newTxids.map((txid, index) => ({
-        jsonrpc: '1.0',
-        id: `getmempoolentry-${index}`,
-        method: 'getmempoolentry',
-        params: [txid],
-      }));
-      const responseArray: BitcoinRpcResponse<GetMempoolEntryResult>[] =
-        await rpcClient.batchRpc(batchRequests);
-
-      for (const [index, response] of responseArray.entries()) {
-        const txid = newTxids[index];
-        if (!txid) {
-          continue;
-        }
-        try {
-          if (response?.error) {
-            console.warn(
-              `Failed to fetch mempool entry for ${txid}: RPC error ${response.error.code}: ${response.error.message}`
-            );
-            continue;
-          }
-          if (!response?.result) {
-            console.warn(
-              `Invalid response for mempool entry ${txid}: No result`
-            );
-            continue;
-          }
-          cachedMempool?.txs.set(txid, response.result);
-        } catch (e: any) {
-          console.warn(
-            `Unexpected error processing mempool entry ${txid}: ${e.message}`
-          );
-        }
-      }
+      await batchFetchMempoolEntries(newTxids, rpcClient, cachedMempool!);
     }
 
     // Clean up removed txs
@@ -185,21 +210,21 @@ async function getAndUpdateMempoolCache(
 }
 
 /**
- * Processes new transactions: categorizes them.
+ * Processes new transactions: categorizes them into highPriority (Transaction[]) or low-priority (Maps).
+ * Skips high-priority txs below the cutoff fee when the buffer is full.
  * @param newTxids - Array of new transaction IDs.
  * @param cachedMempool - The cached mempool data.
- * @param categories - The current categories object to update.
+ * @param categories - The current categorized data to update.
  * @returns The number of failed transactions during processing.
  */
-async function processNewTransactions(
+function processNewTransactions(
   newTxids: string[],
   cachedMempool: CachedMempool,
-  categories: { [key in TransactionCategory]: Transaction[] }
-): Promise<number> {
+  categories: CategorizedData
+): number {
   let failedTxCount = 0;
   if (newTxids.length === 0) return failedTxCount;
 
-  // Categorize new txs using their details
   for (const txid of newTxids) {
     const details = cachedMempool.txs.get(txid);
     if (!details) {
@@ -208,44 +233,76 @@ async function processNewTransactions(
     }
     const tx = buildTransaction(txid, details);
     const category = categorizeTransaction(tx, details);
-    categories[category].push(tx);
+
+    if (category === 'highPriority') {
+      // Skip if below cutoff and buffer is full
+      if (
+        categories.highPriority.length >= AppConstants.HIGH_PRIORITY_BUFFER &&
+        tx.feePerVbyte < categories.minCutoffFee
+      ) {
+        continue;
+      }
+      categories.highPriority.push(tx);
+    } else {
+      categories[category].set(txid, {
+        vsize: tx.vsize,
+        feePerVbyte: tx.feePerVbyte,
+      });
+    }
   }
 
   return failedTxCount;
 }
 
 /**
- * Sorts high-priority transactions by feePerVbyte (desc) then time (desc), and slices to max limit.
+ * Sorts high-priority transactions by feePerVbyte (desc) then time (desc),
+ * trims to the buffer limit, and returns the cutoff fee for future filtering.
  * @param highPriority - Array of high-priority transactions.
- * @returns Sorted and sliced array.
+ * @returns Sorted/trimmed array and the minimum fee of the buffer.
  */
-function sortHighPriorityTransactions(
+function trimHighPriorityBuffer(
   highPriority: Transaction[]
-): Transaction[] {
-  return highPriority
+): { trimmed: Transaction[]; minCutoffFee: number } {
+  const sorted = highPriority
     .sort((a, b) => {
       if (b.feePerVbyte !== a.feePerVbyte) {
         return b.feePerVbyte - a.feePerVbyte; // Sort by feePerVbyte descending
       }
       return b.time - a.time; // Within same fee, sort by time descending
     })
-    .slice(0, AppConstants.MAX_VIZ_TX);
+    .slice(0, AppConstants.HIGH_PRIORITY_BUFFER);
+
+  const minCutoffFee =
+    sorted.length >= AppConstants.HIGH_PRIORITY_BUFFER
+      ? sorted[sorted.length - 1]!.feePerVbyte
+      : 0;
+
+  return { trimmed: sorted, minCutoffFee };
 }
 
 /**
- * Summarizes a category of transactions.
- * @param txs - Array of transactions in the category.
+ * Summarizes a low-priority category from its lightweight Map data.
+ * @param txs - Map of txid to lightweight tx data.
  * @returns A LowPriorityCategory summary.
  */
-function summarizeCategory(txs: Transaction[]): LowPriorityCategory {
+function summarizeLowPriorityCategory(
+  txs: Map<string, LowPriorityTxData>
+): LowPriorityCategory {
+  let totalVsize = 0;
+  let sumFeePerVbyte = 0;
+  let exampleTxid: string | undefined;
+
+  for (const [txid, data] of txs) {
+    totalVsize += data.vsize;
+    sumFeePerVbyte += data.feePerVbyte;
+    if (!exampleTxid) exampleTxid = txid;
+  }
+
   return {
-    count: txs.length,
-    totalVsize: txs.reduce((sum, tx) => sum + tx.vsize, 0),
-    avgFeePerVbyte:
-      txs.length > 0
-        ? txs.reduce((sum, tx) => sum + tx.feePerVbyte, 0) / txs.length
-        : 0,
-    exampleTxid: txs[0]?.txid,
+    count: txs.size,
+    totalVsize,
+    avgFeePerVbyte: txs.size > 0 ? sumFeePerVbyte / txs.size : 0,
+    exampleTxid,
   };
 }
 
@@ -321,42 +378,56 @@ export default defineEventHandler(
 
       // Load or initialize categories, apply removals
       const cacheKey = `${nodeIndex}_${blockCount}`;
-      let categories: { [key in TransactionCategory]: Transaction[] };
-      const removedSet = new Set(removedTxids);
+      let categories: CategorizedData;
       if (categoriesCache.has(cacheKey)) {
         categories = categoriesCache.get(cacheKey)!;
-        // Filter out removed txs from all categories
-        for (const catKey in categories) {
-          const cat = catKey as TransactionCategory;
-          categories[cat] = categories[cat].filter(
+        // Apply removals
+        if (removedTxids.length > 0) {
+          const removedSet = new Set(removedTxids);
+          categories.highPriority = categories.highPriority.filter(
             (tx) => !removedSet.has(tx.txid)
           );
+          // O(1) removal from low-priority Maps
+          for (const txid of removedTxids) {
+            categories.lowFee.delete(txid);
+            categories.ordinals.delete(txid);
+            categories.anomalous.delete(txid);
+          }
         }
       } else {
         categories = {
           highPriority: [],
-          lowFee: [],
-          ordinals: [],
-          anomalous: [],
+          lowFee: new Map(),
+          ordinals: new Map(),
+          anomalous: new Map(),
+          minCutoffFee: 0,
         };
       }
 
       // Process new transactions and update categories
-      await processNewTransactions(newTxids, cachedMempool!, categories);
+      processNewTransactions(newTxids, cachedMempool!, categories);
+
+      // Trim highPriority buffer and update cutoff fee
+      const { trimmed, minCutoffFee } = trimHighPriorityBuffer(
+        categories.highPriority
+      );
+      categories.highPriority = trimmed;
+      categories.minCutoffFee = minCutoffFee;
 
       // Cache the updated categories
-      categoriesCache.set(cacheKey, { ...categories });
+      categoriesCache.set(cacheKey, categories);
 
-      // Sort high-priority txs
-      const sortedHighPriority = sortHighPriorityTransactions(
-        categories.highPriority
+      // Slice for response (buffer may be up to HIGH_PRIORITY_BUFFER, display limited to MAX_VIZ_TX)
+      const sortedHighPriority = categories.highPriority.slice(
+        0,
+        AppConstants.MAX_VIZ_TX
       );
 
       // Summarize low-priority categories
       const lowPriorityCategories = {
-        lowFee: summarizeCategory(categories.lowFee),
-        ordinals: summarizeCategory(categories.ordinals),
-        anomalous: summarizeCategory(categories.anomalous),
+        lowFee: summarizeLowPriorityCategory(categories.lowFee),
+        ordinals: summarizeLowPriorityCategory(categories.ordinals),
+        anomalous: summarizeLowPriorityCategory(categories.anomalous),
       };
 
       // Fetch recent blocks

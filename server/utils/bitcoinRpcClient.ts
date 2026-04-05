@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import { destr } from 'destr';
+import { AppConstants } from './constants';
 
 /**
  * Interface defining the structure of a Bitcoin RPC response.
@@ -234,6 +235,7 @@ export class BitcoinRpcClient {
     const url = `http://${node.host}:${node.port}`;
     this.axiosInstance = axiosInstance;
     this.axiosInstance.defaults.baseURL = url;
+    this.axiosInstance.defaults.timeout = AppConstants.RPC_TIMEOUT_MS;
     this.axiosInstance.defaults.headers.common[
       'Authorization'
     ] = `Basic ${auth}`;
@@ -310,13 +312,20 @@ export class BitcoinRpcClient {
   async batchRpc<T>(
     requests: { jsonrpc: string; id: string; method: string; params: any[] }[]
   ): Promise<RpcResponse<T>[]> {
-    const response = await this.axiosInstance.post<RpcResponse<T>[]>(
+    const response = await this.axiosInstance.post(
       '',
-      requests
+      requests,
+      {
+        responseType: 'text',
+        transformResponse: [],
+      }
     );
-    if (!Array.isArray(response.data)) {
+
+    const parsedData = destr(response.data);
+
+    if (!Array.isArray(parsedData)) {
       throw new Error('Batch RPC response is not an array');
     }
-    return response.data;
+    return parsedData as RpcResponse<T>[];
   }
 }

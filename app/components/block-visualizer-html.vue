@@ -121,6 +121,33 @@ function openTxDetails(txid: string) {
   window.open(`https://mempool.space/tx/${txid}`, '_blank');
 }
 
+// Shared popover state — one popover for all tx blocks
+const hoveredTx = ref<Transaction | null>(null);
+const popoverStyle = ref<Record<string, string>>({});
+let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function onTxMouseEnter(event: MouseEvent, tx: Transaction) {
+  if (hoverTimeout) clearTimeout(hoverTimeout);
+  hoverTimeout = setTimeout(() => {
+    hoveredTx.value = tx;
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
+    popoverStyle.value = {
+      position: 'fixed',
+      top: `${rect.bottom + 8}px`,
+      left: `${rect.left}px`,
+      zIndex: '50',
+    };
+  }, 500);
+}
+
+function onTxMouseLeave() {
+  if (hoverTimeout) {
+    clearTimeout(hoverTimeout);
+    hoverTimeout = null;
+  }
+  hoveredTx.value = null;
+}
+
 onMounted(async () => {
   try {
     isLoading.value = true;
@@ -159,24 +186,23 @@ onBeforeUnmount(() => {
       </template>
       <div class="p-4 h-84">
         <div class="flex flex-row flex-wrap space-x-1 space-y-1 overflow-y-auto w-full max-h-78" v-if="!isLoading">
-          <template v-for="tx in visualizerData.transactions" :key="tx.txid">
-            <UPopover mode="hover" :open-delay="500">
-              <div :class="getBlockColor(tx.feePerVbyte)" class="w-3 h-3 cursor-pointer rounded-xs"
-                @click="openTxDetails(tx.txid)"></div>
-              <template #content>
-                <div class="p-4 text-sm">
-                  <div>TXID: {{ tx.txid.substring(0, 8) }}...</div>
-                  <div>Fee: {{ tx.fee.toFixed(0) }} sat</div>
-                  <div>Vsize: {{ tx.vsize }} vB</div>
-                  <div>Fee/vB: {{ tx.feePerVbyte.toFixed(2) }} sat/vB</div>
-                  <div>
-                    Age:
-                    {{ Math.floor((Date.now() / 1000 - tx.time) / 60) }} min ago
-                  </div>
-                </div>
-              </template>
-            </UPopover>
-          </template>
+          <div v-for="tx in visualizerData.transactions" :key="tx.txid" :class="getBlockColor(tx.feePerVbyte)"
+            class="w-3 h-3 cursor-pointer rounded-xs" @click="openTxDetails(tx.txid)"
+            @mouseenter="onTxMouseEnter($event, tx)" @mouseleave="onTxMouseLeave" />
+          <!-- Single shared popover for hovered transaction -->
+          <Teleport to="body">
+            <div v-if="hoveredTx" :style="popoverStyle"
+              class="bg-elevated text-default rounded-md shadow-lg ring ring-default p-4 text-sm pointer-events-none">
+              <div>TXID: {{ hoveredTx.txid.substring(0, 8) }}...</div>
+              <div>Fee: {{ hoveredTx.fee.toFixed(0) }} sat</div>
+              <div>Vsize: {{ hoveredTx.vsize }} vB</div>
+              <div>Fee/vB: {{ hoveredTx.feePerVbyte.toFixed(2) }} sat/vB</div>
+              <div>
+                Age:
+                {{ Math.floor((Date.now() / 1000 - hoveredTx.time) / 60) }} min ago
+              </div>
+            </div>
+          </Teleport>
         </div>
         <div v-else>
           <UProgress color="warning" class="max-w-sm mx-auto mt-12" />
@@ -188,7 +214,7 @@ onBeforeUnmount(() => {
           Showing top
           <UBadge color="neutral" variant="subtle" size="xl">{{
             visualizerData.transactions.length
-            }}</UBadge>
+          }}</UBadge>
           txs ordered by fee.
           <!-- <UTooltip text="Next Block Timer">
             <UProgress v-model="progressValue" color="warning" class="mt-4" />
