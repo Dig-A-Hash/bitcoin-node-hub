@@ -505,11 +505,9 @@ function renderMap() {
 }
 
 function onSelect(
-  e: Event,
-  _ignored?: TableRow<PeerInfo & { geo?: GeoIpResponse }>
+  _e: Event,
+  row: TableRow<PeerInfo & { geo?: GeoIpResponse }>
 ) {
-  // Nuxt UI v3 emits the row as the first argument despite the type saying Event
-  const row = e as unknown as TableRow<PeerInfo & { geo?: GeoIpResponse }>;
   // Clear previous selections
   Object.keys(rowSelection.value).forEach((key) => {
     rowSelection.value[Number(key)] = false;
@@ -524,16 +522,9 @@ function onSelect(
     const lon = parseFloat(row.original.geo.longitude as any);
     if (!isNaN(lat) && !isNaN(lon)) {
       const view = map.getView();
-      const currentZoom = view.getZoom() ?? 4;
-      const dip = Math.min(currentZoom, 4); // zoom out to at most z=4 midway
-      // Pan and zoom-dip run simultaneously; zoom recovers in second half
-      view.animate(
-        { center: fromLonLat([lon, lat]), duration: 2000 }
-      );
-      view.animate(
-        { zoom: dip, duration: 1000 },
-        { zoom: 10, duration: 1000 }
-      );
+      // Always dip to z=2 so the zoom-out effect is consistent on every click
+      view.animate({ center: fromLonLat([lon, lat]), duration: 2000 });
+      view.animate({ zoom: 2, duration: 1000 }, { zoom: 10, duration: 1000 });
     }
   }
 }
